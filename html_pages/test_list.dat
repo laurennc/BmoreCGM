@@ -1,0 +1,7 @@
+#test repo name; box size; amr: yes=1,no=0; cloud density [g/cm^3];density ratio;  mach number; cloudy type
+
+MetalTest, 1.6e17, cm, 1, 1.67e-21, 1000, 8.8, 2 
+Unigrid_Test, 1.67e17, cm, 0, 1.67e-21, 1000, 8.8, 2
+
+
+
