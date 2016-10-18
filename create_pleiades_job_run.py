@@ -13,7 +13,7 @@ def update_enzo_params(f_in,dens_c,mach,dens_amb,rad_c,temp_c,cloud_type):
 		line = line.replace("CloudCrusherCloudTemperature = 1000.0","CloudCrusherCloudTemperature = "+str(temp_c))  
 		line = line.replace("CloudCrusherCloudType        = 2","CloudCrusherCloudType        = "+str(cloud_type))
 		fout.write(line+'\n')
-	os.system('mv temp.out '+fin)
+	os.system('mv temp.out '+f_in)
 	return
 
 def update_runscript(f_in,dir_name):
@@ -23,6 +23,7 @@ def update_runscript(f_in,dir_name):
 	for line in lines:
 		line = line.replace("#PBS -N NAME_HERE","#PBS -N "+dir_name)
 		fout.write(line+'\n')
+	os.system('mv temp.out '+f_in)
 	return
 
 
@@ -66,7 +67,7 @@ while a < len(dens_c):
 						os.system('cp RunScript.sh '+fout+'/')
 						os.system('cp enzo.exe '+fout+'/')
 						os.system('cp cool_rates.in '+fout+'/')
-						os.system('cp output_quick_look.py '+fout+'/')
+						os.system('cp output_quick_look_pleiades.py '+fout+'/')
 						os.system('mkdir '+PLOTS+'/'+fout)
 						flist.write(fout+' '+str(dens_c[a])+' '+str(mach[b])+' '+str(dens_amb[c])+' '+str(temp_c[e])+' '+str(cloud_type[f]    )+'\n')                                         
 						os.chdir(fout)
