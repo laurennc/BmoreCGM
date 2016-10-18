@@ -105,7 +105,7 @@ def look_at_output(clobber,dir_out,quick_out):
     dataset_list = glob.glob(os.path.join(DATA_DIR, 'DD????/DD????'))
 
     print " ---> I'm not checking the plots have been made I'm just gonna make them <---- "
-    run_catalog = Table(names=("rootname","time","Density","Temperature"),dtype=("S200","f8","S200","S200"))
+    run_catalog = Table(names=("rootname","time","Density","Temperature"),dtype=("S200","f8","S400","S400"))
     for output in dataset_list:
         ds = yt.load(output)
 
