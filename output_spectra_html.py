@@ -82,7 +82,7 @@ def make_quicklook_page(ds):
     ## now add the figures
     print "figure names should be dynamic or passed, but not currently"
     spec1_string = 'Spec1_'+ds.basename+'.png'
-    spec2_string = 'Spec2_'+ds.basenmae+'.png'
+    spec2_string = 'Spec2_'+ds.basename+'.png'
 
     addfig = r"""<img src='"""+spec1_string+r"""' style="width:35%">"""
     outfile.write(addfig)
