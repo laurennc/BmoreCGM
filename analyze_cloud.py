@@ -1,4 +1,4 @@
-import yt
+#import yt
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.table import Table
