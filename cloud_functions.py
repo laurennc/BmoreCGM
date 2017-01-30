@@ -14,13 +14,13 @@ def find_GasMass_dans_TempRange(region,low=5.0,high=1e7):
 
 
 def plot_ray_properties(rays,filebase):
-    fields = ['density',('gas','H_number_density'),'metallicity','temperature',('gas','metal_density')]
+    fields = ['density',('gas','H_number_density'),'metallicity','temperature']
     ads = []
     for ray in rays:
         ads = np.append(ads,ray.all_data() )
 
-    names = ['lowres','metalcool','maxref5','metalcoolHM12','medres']
-    #names = ['AMR','Unigrid']
+    #names = ['lowres','metalcool','maxref5','metalcoolHM12','medres']
+    names = ['AMR','Unigrid']
 
     for field in fields:
         i = 0
