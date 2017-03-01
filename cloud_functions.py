@@ -20,7 +20,9 @@ def plot_ray_properties(rays,filebase):
         ads = np.append(ads,ray.all_data() )
 
     #names = ['lowres','metalcool','maxref5','metalcoolHM12','medres']
-    names = ['AMR','Unigrid']
+    #names = ['AMR','Unigrid']
+    #names = ['medres','metalcool','metalHM12']
+    names = ['flux_correct','riemann_solver']#,'cons_recon']
 
     for field in fields:
         i = 0
