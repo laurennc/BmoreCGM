@@ -22,7 +22,8 @@ def plot_ray_properties(rays,filebase):
     #names = ['lowres','metalcool','maxref5','metalcoolHM12','medres']
     #names = ['AMR','Unigrid']
     #names = ['medres','metalcool','metalHM12']
-    names = ['flux_correct','riemann_solver']#,'cons_recon']
+    #names = ['flux_correct','riemann_solver']#,'cons_recon']
+    names = ['metacoolHM12','grackleHM12']
 
     for field in fields:
         i = 0
