@@ -27,6 +27,7 @@ ad = ds.all_data()
 cloud_initial_radius = ds.arr(0.0625,'code_length')
 initial_overdensity = 3000.
 wind_velocity = ds.arr(1e7, 'km/s')
+center = ds.arr([1,1,1],'code_length')
 
 ## Some basic quantities that I would want to know!
 #ambient_density
@@ -50,8 +51,8 @@ cloud_mass_dens = []
 cloud_mass_temp = []
 times = []
 
-idx = np.where(ad['Temperature'] <= 10.**4.0)[0]
-cloud_initial_mass = np.sum(ad['cell_mass'][idx].in_units('Msun'))
+sp = ds.sphere(center,cloud_initial_radius)
+cloud_initial_mass = sp.quantities['TotalMass']()[0].in_units('Msun')
 
 DATA_DIR = "."
 dataset_list = glob.glob(os.path.join(DATA_DIR,"DD????/DD????"))
