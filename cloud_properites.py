@@ -37,7 +37,7 @@ rays = {'center' : ([0.,1.,1.],[4.,1.,1.]),
 	'1xradius'  : ([1.0625,0.,1.],[1.0625,2.,1.]),
 	'2xradius'    : ([1.125,0.,1.],[1.125,2.,1.])
 	}
-ions = ['HI','CIII','CIV','SiII','SiIII','SiIV','OVI']
+ions = ['H','C','Si','O'] # ADD HI BACK!
 
 
 #Some quantities that I would want to store
@@ -45,13 +45,13 @@ cloud_mass_dens = []
 cloud_mass_temp = []
 times = []
 
-coldens = {'HI'    : ('H','0',[]),
-	   'CIII'  : ('C','2',[]),
-	   'CIV'   : ('C','3',[]),
-	   'SiII'  : ('Si','1',[]),
-	   'SiIII' : ('Si','2',[]),
-	   'SiIV'  : ('Si','3',[]),
-	   'OVI'   : ('O','5',[])
+coldens = {'H I'    : ('H','0',[]),
+	   'C III'  : ('C','2',[]),
+	   'C IV'   : ('C','3',[]),
+	   'Si II'  : ('Si','1',[]),
+	   'Si III' : ('Si','2',[]),
+	   'Si IV'  : ('Si','3',[]),
+	   'O VI'   : ('O','5',[])
 	  }
 
 #line_centers = { ??? }
@@ -60,7 +60,7 @@ sp = ds.sphere(center,cloud_initial_radius)
 cloud_initial_mass = sp.quantities['TotalMass']()[0].in_units('Msun')
 
 DATA_DIR = "."
-dataset_list = glob.glob(os.path.join(DATA_DIR,"DD????/DD????"))
+dataset_list = glob.glob(os.path.join(DATA_DIR,"DD000?/DD000?"))
 i = 0
 
 for dataset in dataset_list:
@@ -70,19 +70,20 @@ for dataset in dataset_list:
     times.append(ds.current_time.in_units('Myr'))
     idx = np.where(ad['Density'].in_units('code_mass/code_length**3') > (1./3.)*3000.)[0]
     cloud_mass_dens.append(np.sum(ad['cell_mass'][idx].in_units('Msun')))
+    trident.add_ion_fields(ds,ions=ions)
 
     if make_rays:
        if make_plots:
           sp = yt.SlicePlot(ds,'z','Density')
 	  sp.set_cmap('Density','YlGnBu')
        for ray,(start,end) in rays.items():
-		ray_in = trident.make_light_ray(ds,start_position=start,end_position=end,
+		ray_in = trident.make_simple_ray(ds,start_position=start,end_position=end,
 						lines=ions,ftype='gas',
-						data_filename=ds.basename+'_'+ray+'.5')
-		ad = ray_in.all_data()
-		for ion,element,number,Narr in coldens.items():
+						data_filename=ds.basename+'_'+ray+'.h5')
+		ad_ray = ray_in.all_data()
+		for ion,(element,number,Narr) in coldens.items():
 			field_in = element+'_p'+number+'_number_density'
-			Narr.append(np.log10(np.sum(ray_in[('gas',field_in)])))			
+			Narr.append(np.log10(np.sum(ad_ray[('gas',field_in)]*ad_ray['dl'] )))
 
 			
 			#line_center = ??
