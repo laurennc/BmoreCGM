@@ -83,7 +83,9 @@ for dataset in dataset_list:
 		ad_ray = ray_in.all_data()
 		for ion,(element,number,Narr) in coldens.items():
 			field_in = element+'_p'+number+'_number_density'
-			Narr.append(np.log10(np.sum(ad_ray[('gas',field_in)]*ad_ray['dl'] )))
+			if ((element=='H') & (number='0')):
+				field_in = 'H_number_density'
+			Narr.append(np.log10(np.sum(ad_ray[('gas',field_in)]*ad_ray['dl'] )).item())
 
 			
 			#line_center = ??
@@ -91,7 +93,8 @@ for dataset in dataset_list:
 			#sg.make_spectrum(ray_in,lines=[ion])
 
 		if make_plots:
-			sp.annotate_ray(ray,arrow=True)
+			aray = ds.ray(start,end)
+			sp.annotate_ray(aray,arrow=True)
 
     if make_rays:
 	sp.save()
