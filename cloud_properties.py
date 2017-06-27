@@ -83,7 +83,7 @@ for dataset in dataset_list:
 		ad_ray = ray_in.all_data()
 		for ion,(element,number,Narr) in coldens.items():
 			field_in = element+'_p'+number+'_number_density'
-			if ((element=='H') & (number='0')):
+			if ((element=='H') & (number=='0')):
 				field_in = 'H_number_density'
 			Narr.append(np.log10(np.sum(ad_ray[('gas',field_in)]*ad_ray['dl'] )).item())
 
@@ -93,6 +93,7 @@ for dataset in dataset_list:
 			#sg.make_spectrum(ray_in,lines=[ion])
 
 		if make_plots:
+			print 'ADD RAY!!!'
 			aray = ds.ray(start,end)
 			sp.annotate_ray(aray,arrow=True)
 
@@ -102,14 +103,14 @@ for dataset in dataset_list:
 
 
 if make_plots:
-	plt.plot(times,cloud_mass_dens/cloud_initial_mass,lw=2.0,label='dens')
+	plt.plot(times,cloud_mass_dens/cloud_initial_mass,'o',label='dens')
 	plt.legend()
 	plt.xlabel('Time [Myr]')
 	plt.ylabel('Cloud Mass / Initial Cloud Mass')
 	plt.savefig('cloud_mass_evolution.png')
 	plt.close()
 
-	for ion,element,number,Narr in coldens.items():
+	for ion,(element,number,Narr) in coldens.items():
 		plt.plot(times,Narr,'o',label='ion')
 	plt.legend()
 	plt.xlabel('Time [Myr]')
