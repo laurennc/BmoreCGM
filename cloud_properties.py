@@ -49,7 +49,7 @@ times = []
 coldens = {'H I'    : ('H','0',np.zeros(nrays)),
 	   'C III'  : ('C','2',np.zeros(nrays)),
 	   'C IV'   : ('C','3',np.zeros(nrays)),
-	   'Si II'  : ('Si','1'np.zeros(nrays)),
+	   'Si II'  : ('Si','1',np.zeros(nrays)),
 	   'Si III' : ('Si','2',np.zeros(nrays)),
 	   'Si IV'  : ('Si','3',np.zeros(nrays)),
 	   'O VI'   : ('O','5',np.zeros(nrays))
