@@ -33,6 +33,7 @@ make_plots = True
 make_rays  = True
 
 ## Three Rays of Interest:
+nrays = 3
 rays = {'center' : ([0.,1.,1.],[4.,1.,1.]),
 	'1xradius'  : ([1.0625,0.,1.],[1.0625,2.,1.]),
 	'2xradius'    : ([1.125,0.,1.],[1.125,2.,1.])
@@ -45,13 +46,13 @@ cloud_mass_dens = []
 cloud_mass_temp = []
 times = []
 
-coldens = {'H I'    : ('H','0',[]),
-	   'C III'  : ('C','2',[]),
-	   'C IV'   : ('C','3',[]),
-	   'Si II'  : ('Si','1',[]),
-	   'Si III' : ('Si','2',[]),
-	   'Si IV'  : ('Si','3',[]),
-	   'O VI'   : ('O','5',[])
+coldens = {'H I'    : ('H','0',np.zeros(nrays)),
+	   'C III'  : ('C','2',np.zeros(nrays)),
+	   'C IV'   : ('C','3',np.zeros(nrays)),
+	   'Si II'  : ('Si','1'np.zeros(nrays)),
+	   'Si III' : ('Si','2',np.zeros(nrays)),
+	   'Si IV'  : ('Si','3',np.zeros(nrays)),
+	   'O VI'   : ('O','5',np.zeros(nrays))
 	  }
 
 #line_centers = { ??? }
@@ -73,6 +74,7 @@ for dataset in dataset_list:
     trident.add_ion_fields(ds,ions=ions)
 
     if make_rays:
+       i = 0
        if make_plots:
           sp = yt.SlicePlot(ds,'z','Density')
 	  sp.set_cmap('Density','YlGnBu')
@@ -82,11 +84,12 @@ for dataset in dataset_list:
 						data_filename=ds.basename+'_'+ray+'.h5')
 		ad_ray = ray_in.all_data()
 		for ion,(element,number,Narr) in coldens.items():
+			if i == 0:
+				Narr = np.vstack(Narr,np.zeros(nrays))
 			field_in = element+'_p'+number+'_number_density'
 			if ((element=='H') & (number=='0')):
 				field_in = 'H_number_density'
-			Narr.append(np.log10(np.sum(ad_ray[('gas',field_in)]*ad_ray['dl'] )).item())
-
+			Narr[-1,i] = np.log10(np.sum(ad_ray[('gas',field_in)]*ad_ray['dl'])).item() 
 			
 			#line_center = ??
 			#sg = trident.SpectrumGenerator(??????)
@@ -96,11 +99,12 @@ for dataset in dataset_list:
 			print 'ADD RAY!!!'
 			aray = ds.ray(start,end)
 			sp.annotate_ray(aray,arrow=True)
-
+		i = i + 1
     if make_rays:
 	sp.save()
     i = i + 1
 
+cPickle.dump(coldens,open('coldens_rays_HOLD.cpkl','wb'),protocol=-1)
 
 if make_plots:
 	plt.plot(times,cloud_mass_dens/cloud_initial_mass,'o',label='dens')
@@ -111,13 +115,16 @@ if make_plots:
 	plt.close()
 
 	for ion,(element,number,Narr) in coldens.items():
-		plt.plot(times,Narr,'o',label='ion')
+		Narr = delete(Narr,0)
+		for i in range(len(nrays)):
+			plt.plot(times,Narr[:,i],'o',label=rays.items()[0][0])
 	plt.legend()
 	plt.xlabel('Time [Myr]')
 	plt.ylabel('log(Column Density) [cm^-3]')
 	plt.savefig('coldens_evolve.png')
 	plt.close()
 
+cPickle.dump(coldens,open('coldens_rays.cpkl','wb'),protocol=-1)
 
 ## Some basic quantities that I would want to know!
 #ambient_density
