@@ -32,8 +32,17 @@ center = ds.arr([1,1,1],'code_length')
 make_plots = True
 make_rays  = True
 
+sp = ds.sphere(center,cloud_initial_radius)
+cloud_initial_mass = sp.quantities['TotalMass']()[0].in_units('Msun')
+
+DATA_DIR = "."
+dataset_list = glob.glob(os.path.join(DATA_DIR,"DD000?/DD000?"))
+i = 0
+
+
 ## Three Rays of Interest:
 nrays = 3
+len_dslist = len(dataset_list)
 rays = {'center' : ([0.,1.,1.],[4.,1.,1.]),
 	'1xradius'  : ([1.0625,0.,1.],[1.0625,2.,1.]),
 	'2xradius'    : ([1.125,0.,1.],[1.125,2.,1.])
@@ -46,23 +55,16 @@ cloud_mass_dens = []
 cloud_mass_temp = []
 times = []
 
-coldens = {'H I'    : ('H','0',np.zeros(nrays)),
-	   'C III'  : ('C','2',np.zeros(nrays)),
-	   'C IV'   : ('C','3',np.zeros(nrays)),
-	   'Si II'  : ('Si','1',np.zeros(nrays)),
-	   'Si III' : ('Si','2',np.zeros(nrays)),
-	   'Si IV'  : ('Si','3',np.zeros(nrays)),
-	   'O VI'   : ('O','5',np.zeros(nrays))
+coldens = {'H I'    : ('H','0',np.zeros((len_dslist,nrays))),
+	   'C III'  : ('C','2',np.zeros((len_dslist,nrays))),
+	   'C IV'   : ('C','3',np.zeros((len_dslist,nrays))),
+	   'Si II'  : ('Si','1',np.zeros((len_dslist,nrays))),
+	   'Si III' : ('Si','2',np.zeros((len_dslist,nrays))),
+	   'Si IV'  : ('Si','3',np.zeros((len_dslist,nrays))),
+	   'O VI'   : ('O','5',np.zeros((len_dslist,nrays)))
 	  }
 
 #line_centers = { ??? }
-
-sp = ds.sphere(center,cloud_initial_radius)
-cloud_initial_mass = sp.quantities['TotalMass']()[0].in_units('Msun')
-
-DATA_DIR = "."
-dataset_list = glob.glob(os.path.join(DATA_DIR,"DD000?/DD000?"))
-i = 0
 
 for dataset in dataset_list:
     print 'i is ',i
@@ -74,7 +76,7 @@ for dataset in dataset_list:
     trident.add_ion_fields(ds,ions=ions)
 
     if make_rays:
-       i = 0
+       j = 0
        if make_plots:
           sp = yt.SlicePlot(ds,'z','Density')
 	  sp.set_cmap('Density','YlGnBu')
@@ -84,13 +86,12 @@ for dataset in dataset_list:
 						data_filename=ds.basename+'_'+ray+'.h5')
 		ad_ray = ray_in.all_data()
 		for ion,(element,number,Narr) in coldens.items():
-			if i == 0:
-				Narr = np.vstack(Narr,np.zeros(nrays))
 			field_in = element+'_p'+number+'_number_density'
 			if ((element=='H') & (number=='0')):
 				field_in = 'H_number_density'
-			Narr[-1,i] = np.log10(np.sum(ad_ray[('gas',field_in)]*ad_ray['dl'])).item() 
-			
+			Nhere = np.log10(np.sum(ad_ray[('gas',field_in)]*ad_ray['dl']))
+			Narr[i,j] = Nhere
+				
 			#line_center = ??
 			#sg = trident.SpectrumGenerator(??????)
 			#sg.make_spectrum(ray_in,lines=[ion])
@@ -99,7 +100,7 @@ for dataset in dataset_list:
 			print 'ADD RAY!!!'
 			aray = ds.ray(start,end)
 			sp.annotate_ray(aray,arrow=True)
-		i = i + 1
+		j = j + 1
     if make_rays:
 	sp.save()
     i = i + 1
@@ -115,14 +116,13 @@ if make_plots:
 	plt.close()
 
 	for ion,(element,number,Narr) in coldens.items():
-		Narr = delete(Narr,0)
-		for i in range(len(nrays)):
+		for i in range(nrays):
 			plt.plot(times,Narr[:,i],'o',label=rays.items()[0][0])
-	plt.legend()
-	plt.xlabel('Time [Myr]')
-	plt.ylabel('log(Column Density) [cm^-3]')
-	plt.savefig('coldens_evolve.png')
-	plt.close()
+		plt.legend()
+		plt.xlabel('Time [Myr]')
+		plt.ylabel('log(Column Density) [cm^-3]')
+		plt.savefig(ion+'_coldens_evolve.png')
+		plt.close()
 
 cPickle.dump(coldens,open('coldens_rays.cpkl','wb'),protocol=-1)
 
