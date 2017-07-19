@@ -49,22 +49,26 @@ rays = {'center' : ([0.,1.,1.],[4.,1.,1.]),
 	}
 ions = ['H','C','Si','O'] # ADD HI BACK!
 
+#lines_exact = ['H I 1216','Si II 1260', 'Si III 1207', 'Si IV 1403', 
+#                          'C II 1335',  'C III 977', 'C IV 1548',
+#		'O IV 1032']
+
 
 #Some quantities that I would want to store
 cloud_mass_dens = []
 cloud_mass_temp = []
 times = []
 
-coldens = {'H I'    : ('H','0',np.zeros((len_dslist,nrays))),
-	   'C III'  : ('C','2',np.zeros((len_dslist,nrays))),
-	   'C IV'   : ('C','3',np.zeros((len_dslist,nrays))),
-	   'Si II'  : ('Si','1',np.zeros((len_dslist,nrays))),
-	   'Si III' : ('Si','2',np.zeros((len_dslist,nrays))),
-	   'Si IV'  : ('Si','3',np.zeros((len_dslist,nrays))),
-	   'O VI'   : ('O','5',np.zeros((len_dslist,nrays)))
+coldens = {'H I'    : ('H','0',1216.,np.zeros((len_dslist,nrays))),
+	   'C II'   : ('C','1',1335.,np.zeros((len_dslist,nrays))),
+	   'C III'  : ('C','2',977.,np.zeros((len_dslist,nrays))),
+	   'C IV'   : ('C','3',1548.,np.zeros((len_dslist,nrays))),
+	   'Si II'  : ('Si','1',1260.,np.zeros((len_dslist,nrays))),
+	   'Si III' : ('Si','2',1207.,np.zeros((len_dslist,nrays))),
+	   'Si IV'  : ('Si','3',1403.,np.zeros((len_dslist,nrays))),
+	   'O VI'   : ('O','5',1032.,np.zeros((len_dslist,nrays)))
 	  }
 
-#line_centers = { ??? }
 
 for dataset in dataset_list:
     print 'i is ',i
@@ -79,25 +83,43 @@ for dataset in dataset_list:
        j = 0
        if make_plots:
           sp = yt.SlicePlot(ds,'z','Density')
-	  sp.set_cmap('Density','YlGnBu')
+	  sp.set_unit('Density','g/cm**3')
+	  #sp.set_cmap('Density','YlGnBu')
        for ray,(start,end) in rays.items():
 		ray_in = trident.make_simple_ray(ds,start_position=start,end_position=end,
 						lines=ions,ftype='gas',
 						data_filename=ds.basename+'_'+ray+'.h5')
 		ad_ray = ray_in.all_data()
-		for ion,(element,number,Narr) in coldens.items():
+		for ion,(element,number,lambda_rest,Narr) in coldens.items():
 			field_in = element+'_p'+number+'_number_density'
 			if ((element=='H') & (number=='0')):
 				field_in = 'H_number_density'
 			Nhere = np.log10(np.sum(ad_ray[('gas',field_in)]*ad_ray['dl']))
 			Narr[i,j] = Nhere
-				
-			#line_center = ??
-			#sg = trident.SpectrumGenerator(??????)
-			#sg.make_spectrum(ray_in,lines=[ion])
+		
+##			MAKE SOME SPECTRA AND PLOTS!
+			if make_rays:
+				lambda_min = lambda_rest - 5.
+                	        lambda_max = lambda_rest + 5.
+                	        line_name = ion+' '+str(int(lambda_rest))
+			
+				sg = trident.SpectrumGenerator(lambda_min=lambda_min, \
+        				lambda_max=lambda_max, dlambda=0.0001)
+    				sg.make_spectrum(ray_in,lines=line_name)
+
+				## Make the plots (they should all have the same axes...)
+				plt.plot(sg.lambda_field,sg.flux_field)
+				plt.xlabel('Wavelength [A]')
+				plt.ylabel('Relative Flux')
+				plt.ylim(0.99,1.)
+				plt.title(line_name)
+				plt_out = ds.basename+'_'+ray+'_'+element+str(int(number)+1)+'.png'
+				plt.savefig(plt_out)
+				plt.close()
 
 		if make_plots:
-			print 'ADD RAY!!!'
+			print 'Add Ray!!!!!!!!!!!!!!!!!!!!!'
+			print start,end
 			aray = ds.ray(start,end)
 			sp.annotate_ray(aray,arrow=True)
 		j = j + 1
@@ -115,7 +137,7 @@ if make_plots:
 	plt.savefig('cloud_mass_evolution.png')
 	plt.close()
 
-	for ion,(element,number,Narr) in coldens.items():
+	for ion,(element,number,lambda_rest,Narr) in coldens.items():
 		for i in range(nrays):
 			plt.plot(times,Narr[:,i],'o',label=rays.items()[0][0])
 		plt.legend()
