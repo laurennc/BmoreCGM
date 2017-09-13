@@ -5,10 +5,27 @@ import yt
 import numpy as np
 import matplotlib.pyplot as plt
 from yt.analysis_modules.star_analysis.api import StarFormationRate
+from yt.data_objects.particle_filters import add_particle_filter
 import os
 from radial_data_nozeros import *
 import trident
 import cPickle
+
+def fdbk_refine_box(ds,halo_center):
+    box_center = np.copy(halo_center)
+    box_center[1] = box_center[1]+ds.arr(60.,'kpc').in_units('code_length').value
+
+    dx = ds.arr(40.,'kpc').in_units('code_length').value
+    dy = ds.arr(80.,'kpc').in_units('code_length').value
+    box_left  = [box_center[0]-dx, box_center[1]-dy, box_center[2]-dx]
+    box_right = [box_center[0]+dx, box_center[1]+dy, box_center[2]+dx]
+
+    refine_box = ds.r[box_left[0]:box_right[0], box_left[1]:box_right[1], box_left[2]:box_right[2]]
+    return refine_box
+
+def formed_star(pfilter, data):
+    filter = data["all", "creation_time"] > 0
+    return filter
 
 plot_kwargs = {
     'nref10_track_2'         : {'ls':'-','color':'#e7298a'}, #,'marker':'o','markersize':'0.25'},
@@ -42,27 +59,36 @@ def diskVectors(ds, center):
     return (angular_momentum,x)
 
 def compute_disk_masses(filenames):
-    rds = np.arange(27,43)
+    rds = np.arange(28,43)
     rds = rds[::-1]
     timesteps = np.zeros(len(rds))
     gas_masses = np.zeros((len(rds),len(filenames)))
     stellar_masses = np.zeros((len(rds),len(filenames)))
 
+    add_particle_filter("formed_star", function=formed_star, filtered_type='all',
+                        requires=["creation_time"])
+
     for j in range(len(filenames)):
         center_guess = [0.48988587,0.47121728,0.50938220]
         for i in range(len(rds)):
-            filein = filenames[i]+'/RD00'+str(rds[i])+'/RD00'+str(rds[i])
+            filein = filenames[j]+'/RD00'+str(rds[i])+'/RD00'+str(rds[i])
             ds = yt.load(filein)
+            ds.add_particle_filter('formed_star')
             halo_center = get_halo_center(ds,center_guess)
             center_guess = halo_center
             (Lx,x) = diskVectors(ds,halo_center)
             disk = ds.disk(halo_center,Lx,(40.,'kpc'),(20.,'kpc'))
             ## let's look for cold/dense gas
             ## ISM conditions from review paper:
-            ## ??
-            idx = np.where(() & ())[0]
-        i = i + 1
-    return disk_masses
+            ## n > 0.1, T < 4
+            idx = np.where((disk['H_p0_number_density'] < 0.1) &
+                           (disk['Temperature'] < 1e4))[0]
+            gas_masses[i,j] = np.sum(disk['cell_mass'][idx].in_units('Msun'))
+            stellar_masses[i,j] = np.sum(disk['formed_star', 'particle_mass'].in_units('Msun'))
+            timesteps[i] = ds.current_redshift
+    data = {'gas_masses':gas_masses,'stellar_masses':stellar_masses,'timesteps':timesteps}
+    cPickle.dump(data,open('disk_mass_evol.cpkl','wb'),protocol=-1)
+    return gas_masses,stellar_masses,timesteps
 
 def make_frbs(filename,center,fields,ions,fdbk=False):
     ds = yt.load(filename)
@@ -74,15 +100,7 @@ def make_frbs(filename,center,fields,ions,fdbk=False):
         print 'in fdbk'
         halo_center = get_halo_center(ds,center)
 
-        box_center = np.copy(halo_center)
-        box_center[1] = box_center[1]+ds.arr(60.,'kpc').in_units('code_length').value
-
-        dx = ds.arr(40.,'kpc').in_units('code_length').value
-        dy = ds.arr(80.,'kpc').in_units('code_length').value
-        box_left  = [box_center[0]-dx, box_center[1]-dy, box_center[2]-dx]
-        box_right = [box_center[0]+dx, box_center[1]+dy, box_center[2]+dx]
-
-        refine_box = ds.r[box_left[0]:box_right[0], box_left[1]:box_right[1], box_left[2]:box_right[2]]
+        refine_box = fdbk_refine_box(ds,halo_center)
 
         width = [(160,'kpc'),(80.,'kpc')]
         resolution = (320,160)
@@ -209,7 +227,7 @@ def plot_coldens_radialprofiles(filenames,fields,xlen,ylen,fileout,fdbk=False):
 		    if len(fields) == 1:
 		    	ax[0].set_title(fields[j].split('_')[0:2])
 		        ax[i-4].plot(rp.r,rp.mean,**kwargs)
-			ax[5].set_xlabel('Radius [kpc]')	
+			ax[5].set_xlabel('Radius [kpc]')
 		    else:
                     	ax[0,j].set_title(fields[j].split('_')[0:2])
                     	ax[i-4,j].plot(rp.r,rp.mean,**kwargs)
@@ -219,6 +237,69 @@ def plot_coldens_radialprofiles(filenames,fields,xlen,ylen,fileout,fdbk=False):
         plt.savefig(fileout)
     return
 
+def plot_disk_gas_masses(filenames,timesteps,gas_masses,fileout):
+    fig,ax = plt.subplots(6,1,sharex=True,sharey=True)
+    fig.set_size_inches(6,14)
+    fig.subplots_adjust(hspace=0.1,wspace=0.1)
+
+    i = 0
+    for i in range(len(filenames)):
+        args = filenames[i].split('/')[-3]
+        kwargs = plot_kwargs[args]
+        if i < 5:
+            ax[0].plot(timesteps,gas_masses[:,i],**kwargs)
+            ax[i+1].plot(timesteps,gas_masses[:,i],**kwargs)
+        if i > 4:
+            ax[i-4].plot(timesteps,gas_masses[:,i],**kwargs)
+            ax[i-4].set_xlim(1,0)
+            #ax[i-4].set_ylim(0,25)
+            #ax[i-3].annotate('')
+        i = i + 1
+    ax[0].set_xlim(1,0)
+    #ax[0].set_ylim(0,25)
+    ax[5].set_xlabel('Redshift')
+    ax[2].set_ylabel('ISM Mass [log(Msun)]')
+    plt.savefig(fileout)
+    return
+
+def plot_phase_diagrams(filenames,center,fileout):
+    fig,ax = plt.subplots(2,5,sharex=True,sharey=True)
+    ax = ax.flatten()
+    fig.set_size_inches(14,8)
+    fig.subplots_adjust(hspace=0.1,wspace=0.1)
+    fig.subplots_adjust(right=0.8)
+    for i in range(len(filenames)):
+        ds = yt.load(filenames[i])
+        halo_center = get_halo_center(ds,center)
+        refine_box = fdbk_refine_box(ds,halo_center)
+        cellmass = refine_box['cell_mass'].in_units('Msun')
+        H, xedges, yedges = np.histogram2d(np.log10(refine_box[('gas','H_nuclei_density')]),
+                                           np.log10(refine_box['Temperature']),
+                                           bins=200.,range=[[-6,0],[3, 8]],weights=cellmass) #,normed=True)
+
+        im = ax[i].imshow(np.log10(H.T),extent=[-6,0,3,8],interpolation='nearest',
+                     origin='lower',cmap='plasma',vmin=4,vmax=8)
+
+        ax[i].set_xlim([-6,0])
+        ax[i].set_ylim([3,8])
+        ax[i].set_title(filenames[i].split('/')[-3])
+        ax[i].grid(which='major', axis='x', linewidth=0.75, linestyle='-', color='0.87')
+        ax[i].grid(which='minor', axis='x', linewidth=0.25, linestyle='-', color='0.87',alpha=0.2)
+        ax[i].grid(which='major', axis='y', linewidth=0.75, linestyle='-', color='0.87')
+        ax[i].grid(which='minor', axis='y', linewidth=0.25, linestyle='-', color='0.87',alpha=0.2)
+        ax[i].tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='on')
+        ax[i].tick_params(axis='y',which='both',bottom='off',top='off',labelbottom='off')
+
+    ax[0].set_ylabel('Temperature [log(K)]')
+    ax[7].set_xlabel('nH [log(cm^-3)]')
+    #ax[0].set_xbound(lower=-6,upper=0)
+    #ax[0].set_ybound(lower=3,upper=8)
+
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.02, 0.7])
+    fig.colorbar(im, cax=cbar_ax)
+
+    plt.savefig(fileout)
+    return
 ###################################################################################################
 
 filenames = ['/astro/simulations/FOGGIE/halo_008508/nref10_track_2/RD0042/RD0042',
@@ -232,14 +313,30 @@ filenames = ['/astro/simulations/FOGGIE/halo_008508/nref10_track_2/RD0042/RD0042
              '/astro/simulations/FOGGIE/halo_008508/nref10_z1_0.5_natural_lowfdbk_3/RD0042/RD0042',
              '/astro/simulations/FOGGIE/halo_008508/nref10_z1_0.5_natural_lowfdbk_4/RD0042/RD0042']
 
+filenames_ts = ['/astro/simulations/FOGGIE/halo_008508/nref10_track_2',
+             '/astro/simulations/FOGGIE/halo_008508/nref10_track_lowfdbk_1',
+             '/astro/simulations/FOGGIE/halo_008508/nref10_track_lowfdbk_2',
+             '/astro/simulations/FOGGIE/halo_008508/nref10_track_lowfdbk_3',
+             '/astro/simulations/FOGGIE/halo_008508/nref10_track_lowfdbk_4',
+             '/astro/simulations/FOGGIE/halo_008508/nref10_z1_0.5_natural',
+             '/astro/simulations/FOGGIE/halo_008508/nref10_z1_0.5_natural_lowfdbk_1',
+             '/astro/simulations/FOGGIE/halo_008508/nref10_z1_0.5_natural_lowfdbk_2',
+             '/astro/simulations/FOGGIE/halo_008508/nref10_z1_0.5_natural_lowfdbk_3',
+             '/astro/simulations/FOGGIE/halo_008508/nref10_z1_0.5_natural_lowfdbk_4']
+
 #filenames = ['/Users/dalek/data/Jason/nref10_track_lowfdbk_1/RD0042/RD0042']
 #ds = yt.load(filenames[0])
 #center = [0.48988587,0.47121728,0.50938220]
 #halo_center = get_halo_center(ds,center)
 halo_center = np.array([0.48984, 0.47133, 0.50956])
 
-fields = ['H_p0_number_density','O_p5_number_density','C_p3_number_density','C_p2_number_density',
-          'Si_p2_number_density','Si_p3_number_density']
+gas_masses, stellar_masses, timesteps = compute_disk_masses(filenames_ts)
+plot_disk_gas_masses(filenames,timesteps,gas_masses,'fdbk_diskgasmass.pdf')
+
+#plot_phase_diagrams(filenames,halo_center,'fdbk_phase.pdf')
+
+#fields = ['H_p0_number_density','O_p5_number_density','C_p3_number_density','C_p2_number_density',
+#          'Si_p2_number_density','Si_p3_number_density']
 
 #plot_coldens_radialprofiles(filenames,fields,fdbk=True)
 
@@ -248,19 +345,16 @@ fields = ['H_p0_number_density','O_p5_number_density','C_p3_number_density','C_p
 #    make_frbs(filename,halo_center,fields,ions,fdbk=True)
 
 
-Cfields  = ['C_p3_number_density','C_p2_number_density']
-SiFields = ['Si_p2_number_density','Si_p3_number_density']
-OFields  = ['O_p5_number_density']
+#Cfields  = ['C_p3_number_density','C_p2_number_density']
+#SiFields = ['Si_p2_number_density','Si_p3_number_density']
+#OFields  = ['O_p5_number_density']
 
 #plot_coldens_radialprofiles(filenames,['H_p0_number_density'],6,14,
 #			    'coldensH.pdf',fdbk=True)
 #plot_coldens_radialprofiles(filenames,Cfields,12,14,'coldensC.pdf',fdbk=True)
 #plot_coldens_radialprofiles(filenames,SiFields,12,14,'coldensSi.pdf',fdbk=True)
 #plot_coldens_radialprofiles(filenames,OFields,6,14,'coldensO.pdf',fdbk=True)
-plot_coldens_radialprofiles(filenames,fields,24,14,'coldensALL.pdf',fdbk=True)
+#plot_coldens_radialprofiles(filenames,fields,24,14,'coldensALL.pdf',fdbk=True)
 
 #plot_SFHS(filenames,halo_center,(300.,'kpc'),'feedback_SFHs.pdf')
 #confirm_halo_centers(filenames,halo_center)
-
-
-
