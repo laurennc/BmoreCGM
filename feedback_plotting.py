@@ -58,6 +58,11 @@ def diskVectors(ds, center):
     x /= np.linalg.norm(x)
     return (angular_momentum,x)
 
+def compute_cell_distance(halo_center,x,y,z):
+    return np.sqrt((halo_center[0]-x)**2.0+
+                    (halo_center[1]-y)**2.0+
+                    (halo_center[2]-z)**2.0)
+
 def compute_disk_masses(filenames):
     rds = np.arange(28,43)
     rds = rds[::-1]
@@ -202,6 +207,43 @@ def confirm_halo_centers(filenames,center):
         sl.save(args)
     return
 
+def confirm_disks(filenames,center):
+    for i in range(len(filenames)):
+        ds = yt.load(filenames[i])
+        args = filenames[i].split('/')[-3]
+        halo_center = get_halo_center(ds,center)
+        (Lx,x) = diskVectors(ds, halo_center)
+        disk = ds.disk(halo_center,Lx,(100.,'kpc'),(20.,'kpc'))
+        sl = yt.ProjectionPlot(ds,'y','Density',center=halo_center,width=(200,'kpc'),
+                          data_source=disk)
+        sl.annotate_text(center,'c')
+        sl.save(args+'_disk')
+    return
+
+def plot_point_radialprofiles(filenames,center,field,fileout,plt_log=True):
+    fig,ax = plt.subplots(2,5,sharex=True,sharey=True)
+    ax = ax.flatten()
+    fig.set_size_inches(14,8)
+    fig.subplots_adjust(hspace=0.1,wspace=0.1)
+    for i in range(len(filenames)):
+        kwargs = plot_kwargs[filenames[i].split('/')[-3]]
+        ds = yt.load(filenames[i])
+        halo_center = get_halo_center(ds,center)
+        refine_box = fdbk_refine_box(ds,halo_center)
+        halo_center = ds.arr(halo_center,'code_length')
+        dists = compute_cell_distance(halo_center,refine_box['x'],
+                                      refine_box['y'],refine_box['z'])
+        dists = dists.in_units('kpc')
+        if plt_log:
+            ax[i].plot(dists,np.log10(refine_box[field]),alpha=0.1,color=kwargs['color'])
+        else:
+            ax[i].plot(dists,refine_box[field],'.',alpha=0.1,color=kwargs['color'])
+
+        ax[0].set_ylabel(field)
+        ax[7].set_xlabel('Distance [kpc]')
+        plt.savefig(fileout)
+    return
+
 def plot_coldens_radialprofiles(filenames,fields,xlen,ylen,fileout,fdbk=False):
     if fdbk == True:
         fig,ax = plt.subplots(6,len(fields),sharex=True) #,sharey=True)
@@ -329,6 +371,10 @@ filenames_ts = ['/astro/simulations/FOGGIE/halo_008508/nref10_track_2',
 #center = [0.48988587,0.47121728,0.50938220]
 #halo_center = get_halo_center(ds,center)
 halo_center = np.array([0.48984, 0.47133, 0.50956])
+
+plot_point_radialprofiles(filenames,halo_center,'Density','dens_pt_profile.png',plt_log=True)
+plot_point_radialprofiles(filenames,halo_center,'Temperature','temp_pt_profile.png',plt_log=True)
+plot_point_radialprofiles(filenames,halo_center,'metallicity','metal_pt_profile.png',plt_log=False)
 
 gas_masses, stellar_masses, timesteps = compute_disk_masses(filenames_ts)
 plot_disk_gas_masses(filenames,timesteps,gas_masses,'fdbk_diskgasmass.pdf')
