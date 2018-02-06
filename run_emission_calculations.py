@@ -9,16 +9,33 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import matplotlib as mpl
 from astropy.cosmology import WMAP9 as cosmo
 from matplotlib import colors
+import trident
+
+import holoviews as hv
+import pandas as pd
+import datashader as dshade
+from holoviews.operation.datashader import datashade
+from holoviews import Store
+hv.extension('matplotlib')
 
 #base = "/Users/dalek/data/Molly/natural/nref11"
 base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 fn = base+"/RD0020/RD0020"
-lines = ['HAlpha','OVI','CIV','CIII_977','SiIV']
+#lines = ['HAlpha','OVI','CIV','CIII_977','SiIV']
 track_name = base+"/halo_track"
 args = fn.split('/')
 
 bmap = brew.get_map('PuRd','Sequential',9)
 pink_cmap = bmap.get_mpl_colormap(N=1000, gamma=2.0)
+detect_color_key = {b'nope':'#808080',
+                    b'poss':'#FF69B4',
+                    b'prob':'#00CED1',
+                    b'defi': '#32CD32'} #'#7FFF00'}
+
+detect_limits = {'nope':(-10,1),
+                 'poss':(1,2),
+                 'prob':(2,3),
+                 'defi':(3,10)}
 
 fontcs ={'fontname':'Helvetica','fontsize':16}
 mpl.rc('text', usetex=True)
@@ -65,6 +82,41 @@ def create_emission_frbs():
                 frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
                 #fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_'+str(res)+'kpc.cpkl'
                 fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_forcedres.cpkl'
+                cPickle.dump(frb[('gas',field)],open(fileout,'wb'),protocol=-1)
+    return
+
+def create_coldens_frbs():
+    ds = yt.load(fn)
+    track = Table.read(track_name, format='ascii')
+    track.sort('col1')
+    rb,rb_center,rb_width = get_refine_box(ds,ds.current_redshift,track)
+    dx = np.unique(rb['dx']).max()
+    dx = ds.arr(0.1829591205,'kpc').in_units('code_length')
+    print 'Natural Refinement Resolution: ',dx.in_units('kpc')
+
+    num_cells = np.ceil(rb_width/dx)
+    res_list = [0.5,1,5,10]
+
+    trident.add_ion_fields(ds, ions=['Si II', 'Si III', 'Si IV',
+                                     'C II', 'C III', 'C IV', 'O VI', 'Mg II'])
+    lines = ['H_p0_number_density','Si_p1_number_density','Si_p2_number_density',
+             'Si_p3_number_density','C_p1_number_density','C_p2_number_density',
+             'C_p3_number_density','O_p5_number_density','Mg_p1_number_density']
+
+
+    for line in lines:
+        field = line
+        print line
+        for index in 'xyz':
+            print index
+            for res in res_list:
+                print res,' kpc'
+                dx = ds.arr(res,'kpc').in_units('code_length').value
+                num_cells = np.ceil(rb_width/dx)
+                obj = ds.proj(('gas',field),index,data_source=rb)
+                frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
+                fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_'+str(res)+'kpc.cpkl'
+            #    fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_forcedres.cpkl'
                 cPickle.dump(frb[('gas',field)],open(fileout,'wb'),protocol=-1)
     return
 
@@ -316,5 +368,97 @@ def plot_SB_profiles(box_width):
             plt.savefig('z2_'+index+'_'+field+'_SBradialplot.png')
     return
 
+def make_emis_pdframe(frb,r):
+    emis = frb.flatten()
+    dist = r.flatten()
+    detect_prob = np.chararray(np.size(dist), 4)
+    detect_prob[emis >= 3] = 'definite'
+    detect_prob[((emis < 3) & (emis >= 2))] = 'probable'
+    detect_prob[((emis < 2) & (emis >= 1))] = 'possible'
+    detect_prob[emis < 1] = 'nope'
+    df = pd.DataFrame({'dist':dist,'emis':emis,'detect_prob':detect_prob})
+    df.detec_prob = df.detect_prob.astype('category')
+    return df
 
-plot_SB_profiles(box_width)
+def hvPoints_by_detect_prob(df,prob,hvplot=None):
+    idx = ((df['emis'] >= detect_limits[prob][0]) & (df['emis'] < detect_limits[prob][1]))
+    ptshere = np.vstack((df['dist'][idx], df['emis'][idx])).T
+    pltout = hv.Points(ptshere,kdims=['dist','emis']).opts(style=dict(color=detect_color_key[prob]))
+    if hvplot == None:
+        retplot = pltout
+    else:
+        retplot = hvplot * pltout
+    return retplot
+
+def holoviews_SB_profiles(box_width):
+    renderer = Store.renderers['matplotlib'].instance(fig='pdf', holomap='gif')
+    natural_base = '_nref11_RD0020_'
+    refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0020_'
+    box_size = ds.arr(rb_width,'code_length').in_units('kpc')
+    res_list = [0.2,1,5,10]
+    fontrc={'fontname':'Helvetica','fontsize':20}
+    mpl.rc('text',usetex=True)
+    #rb_width = ds.arr(rb_width,'code_length').in_units('kpc')
+    lines = ['CIII_977','OVI','CIV','HAlpha','SiIV']
+
+    for line in lines:
+        field = 'Emission_'+line
+        for index in 'xyz':
+            fig,axes = plt.subplots(2,4)
+            fig.set_size_inches(12,6)
+            iax = 0
+            for res in res_list:
+                if res == res_list[0]:
+                    fileinNAT = 'frbs/frb'+index+natural_base+field+'_forcedres.cpkl'
+                    fileinREF = 'frbs/frb'+index+refined_base+field+'_forcedres.cpkl'
+                else:
+                    fileinNAT = 'frbs/frb'+index+natural_base+field+'_'+str(res)+'kpc.cpkl'
+                    fileinREF = 'frbs/frb'+index+refined_base+field+'_'+str(res)+'kpc.cpkl'
+
+                frbNAT = cPickle.load(open(fileinNAT,'rb'))
+                frbNAT = np.log10(frbNAT/(1+redshift)**4)
+                frbREF = cPickle.load(open(fileinREF,'rb'))
+                frbREF = np.log10(frbREF/(1+redshift)**4)
+
+                r = make_radius_array(box_width,frbNAT)
+                dfREF = make_emis_pdframe(frbREF,r)
+                dfNAT = make_emis_pdframe(frbNAT,r)
+
+                if (res < 2):
+                    llim = dfREF['emis'].min()-0.1
+                    pREF = hv.Points(dfREF,kdims=['dist','emis'])
+                    shadeREF = datashade(pREF,color_key=detect_color_key,
+                                    aggregator=dshade.count_cat('detect_prob'), y_range=(llim,6),
+                                    dynamic=False).opts(plot=dict(aspect='square'))
+
+                    pNAT =  hv.Points(dfNAT,kdims=['dist','emis'])
+                    shadeNAT = datashade(pNAT,color_key=detect_color_key,
+                                    aggregator=dshade.count_cat('detect_prob'), y_range=(llim,6),
+                                    dynamic=False).opts(plot=dict(aspect='square'))
+
+                    if res == res_list[0]:
+                        colsREF,colsNAT = shadeREF,shadeNAT
+                    else:
+                        colsREF = colsREF + shadeREF
+                        colsNAT = colsNAT + shadeNAT
+
+                else:
+                    i = 0
+                    while i < len(detect_limits.keys()):
+                        if i == 0:
+                            pltREF = hvPoints_by_detect_prob(dfREF,detect_limits.keys()[i])
+                            pltNAT = hvPoints_by_detect_prob(dfNAT,detect_limits.keys()[i])
+                        else:
+                            pltREF = hvPoints_by_detect_prob(dfREF,detect_limits.keys()[i],hvplot=pltREF)
+                            pltNAT = hvPoints_by_detect_prob(dfNAT,detect_limits.keys()[i],hvplot=pltNAT)
+                        i = i + 1
+
+                    colsREF = colsREF + pltREF
+                    colsNAT = colsNAT + pltNAT
+
+            pltout = (colsREF + colsNAT).cols(len(res_list))
+            fileout= 'SBprofile_z2_'+index+'_'+field
+            renderer.save(pltout, fileout)
+    return
+
+create_coldens_frbs()
