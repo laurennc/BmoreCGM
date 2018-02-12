@@ -122,7 +122,7 @@ def _Emission_LyAlpha(field,data):
     dia1[idx] = -200.
     emission_line = (10**dia1)*((10.0**H_N)**2.0)
     emission_line = emission_line/(4.*np.pi*1.63e-11)
-    return emissoin_line*ytEmU
+    return emission_line*ytEmU
 
 yt.add_field(('gas','Emission_LyAlpha'),units=emission_units,function=_Emission_LyAlpha)
 
