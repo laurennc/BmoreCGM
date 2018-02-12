@@ -73,10 +73,6 @@ def parse_cloudy_lines_file(filein,fileout):
     return
 
 def make_Cloudy_table(table_index):
-        #hden_n_bins, hden_min, hden_max = 35, -6, 1
-        #T_n_bins, T_min, T_max = 151, 3, 8
-        #hden_n_bins, hden_min, hden_max = 15, -6, 1
-        #hden_n_bins, hden_min, hden_max = 81, -6, 2
         hden_n_bins, hden_min, hden_max = 23, -9, 2
         T_n_bins, T_min, T_max = 71, 2, 8
         #patt = "/u/10/l/lnc2115/vega/data/Ryan/cloudy_out/grid_galquas/emis/z0/g1q1/g1q1_run%i.dat"
@@ -113,6 +109,22 @@ def _Emission_HAlpha(field,data):
     return emission_line*ytEmU
 
 yt.add_field(('gas','Emission_HAlpha'),units=emission_units,function=_Emission_HAlpha)
+
+hden_pts,T_pts,table_LA = make_Cloudy_table(1)
+sr_LA = table_LA.T.ravel()
+bl_LA = interpolate.LinearNDInterpolator(pts,sr_LA)
+
+def _Emission_LyAlpha(field,data):
+    H_N=np.log10(np.array(data["H_nuclei_density"]))
+    Temperature=np.log10(np.array(data["Temperature"]))
+    dia1 = bl_LA(H_N,Temperature)
+    idx = np.isnan(dia1)
+    dia1[idx] = -200.
+    emission_line = (10**dia1)*((10.0**H_N)**2.0)
+    emission_line = emission_line/(4.*np.pi*1.63e-11)
+    return emissoin_line*ytEmU
+
+yt.add_field(('gas','Emission_LyAlpha'),units=emission_units,function=_Emission_LyAlpha)
 
 hden1, T1, table_SiIV_1 = make_Cloudy_table(13)
 hden1, T1, table_SiIV_2 = make_Cloudy_table(14)
