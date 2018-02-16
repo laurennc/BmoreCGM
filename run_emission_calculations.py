@@ -21,7 +21,7 @@ hv.extension('matplotlib')
 #base = "/Users/dalek/data/Molly/natural/nref11"
 base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 fn = base+"/RD0020/RD0020"
-#lines = ['HAlpha','OVI','CIV','CIII_977','SiIV']
+lines = ['HAlpha','OVI','CIV','CIII_977','SiIV']
 track_name = base+"/halo_track"
 args = fn.split('/')
 
@@ -39,6 +39,7 @@ detect_limits = {'nope':(-10,1),
 
 fontcs ={'fontname':'Helvetica','fontsize':16}
 mpl.rc('text', usetex=True)
+
 ds = yt.load(fn)
 track = Table.read(track_name, format='ascii')
 track.sort('col1')
@@ -48,54 +49,40 @@ redshift = ds.current_redshift
 box_width = ds.arr(rb_width,'code_length').in_units('kpc')
 
 def create_emission_frbs():
-    ds = yt.load(fn)
-    track = Table.read(track_name, format='ascii')
-    track.sort('col1')
-    rb,rb_center,rb_width = get_refine_box(ds,ds.current_redshift,track)
-    dx = np.unique(rb['dx']).max()
-    dx = ds.arr(0.1829591205,'kpc').in_units('code_length')
-    print 'Natural Refinement Resolution: ',dx.in_units('kpc')
-
-    num_cells = np.ceil(rb_width/dx)
-    #res_list = [0.5,1,5,10]
+    dx = np.unique(rb['dx'])[1]
+    #dx = ds.arr(0.1829591205,'kpc').in_units('code_length')
+    dxs_list = [0.5,1,5,10]
+    dxs_list = [ds.quan(q,'kpc').in_units('code_length') for q in dxs_list]
+    res_list = np.append(dx,dxs_list)
+    res_list = ds.arr(res_list,'code_length')
 
     for line in lines:
         field = 'Emission_'+line
         print line
         for index in 'xyz':
-                print index
-            #for res in res_list:
-                #print res,' kpc'
-                #dx = ds.arr(res,'kpc').in_units('code_length').value
-                #num_cells = np.ceil(rb_width/dx)
-                fileout = args[-3]+'_'+args[-2]+'_'+field+'_'+index+'_refwidth'
-                proj = yt.ProjectionPlot(ds,index,('gas',field),width=(rb_width,'code_length'),
-                                         center=rb_center,data_source=rb)
-                proj.set_cmap(('gas',field),pink_cmap)
-                proj.save(fileout+'.pdf')
+            print index
+            for res in res_list:
+                reskpc = round(res.in_units('kpc'),2)
+                print reskpc,' kpc'
+                num_cells = np.ceil(rb_width/res)
 
-                proj = yt.ProjectionPlot(ds,index,'density',width=(rb_width,'code_length'),
-                                         center=rb_center,data_source=rb)
-                proj.save(args[-3]+'_'+args[-2]+'_density_'+index+'.pdf')
+                if res == res_list[0]:
+                    fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_forcedres.cpkl'
+                else:
+                    fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_'+str(reskpc)+'kpc.cpkl'
 
                 obj = ds.proj(('gas',field),index,data_source=rb)
                 frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
-                #fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_'+str(res)+'kpc.cpkl'
-                fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_forcedres.cpkl'
                 cPickle.dump(frb[('gas',field)],open(fileout,'wb'),protocol=-1)
     return
 
 def create_coldens_frbs():
-    ds = yt.load(fn)
-    track = Table.read(track_name, format='ascii')
-    track.sort('col1')
-    rb,rb_center,rb_width = get_refine_box(ds,ds.current_redshift,track)
-    dx = np.unique(rb['dx']).max()
-    dx = ds.arr(0.1829591205,'kpc').in_units('code_length')
-    print 'Natural Refinement Resolution: ',dx.in_units('kpc')
-
-    num_cells = np.ceil(rb_width/dx)
-    res_list = [0.5,1,5,10]
+    dx = np.unique(rb['dx'])[1]
+    #dx = ds.arr(0.1829591205,'kpc').in_units('code_length')
+    dxs_list = [0.5,1,5,10]
+    dxs_list = [ds.quan(q,'kpc').in_units('code_lenght') for q in dxs_list]
+    res_list = np.append(dx,dxs_list)
+    res_list = ds.arr(res_list,'code_length')
 
     trident.add_ion_fields(ds, ions=['Si II', 'Si III', 'Si IV',
                                      'C II', 'C III', 'C IV', 'O VI', 'Mg II'])
@@ -103,67 +90,59 @@ def create_coldens_frbs():
              'Si_p3_number_density','C_p1_number_density','C_p2_number_density',
              'C_p3_number_density','O_p5_number_density','Mg_p1_number_density']
 
-
     for line in lines:
         field = line
         print line
         for index in 'xyz':
             print index
             for res in res_list:
+                reskpc = round(res.in_units('kpc'),2)
                 print res,' kpc'
-                dx = ds.arr(res,'kpc').in_units('code_length').value
-                num_cells = np.ceil(rb_width/dx)
+                num_cells = np.ceil(rb_width/res)
+
+                if res == res_list[0]:
+                    fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_forcedres.cpkl'
+                else:
+                    fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_'+str(reskpc)+'kpc.cpkl'
+
                 obj = ds.proj(('gas',field),index,data_source=rb)
                 frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
-                fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_'+str(res)+'kpc.cpkl'
-            #    fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_forcedres.cpkl'
                 cPickle.dump(frb[('gas',field)],open(fileout,'wb'),protocol=-1)
     return
 
 def create_phys_emis_weight_frbs():
-    ds = yt.load(fn)
-    track = Table.read(track_name, format='ascii')
-    track.sort('col1')
-    rb,rb_center,rb_width = get_refine_box(ds,ds.current_redshift,track)
-    #dx = np.unique(rb['dx']).max()
-    dx = ds.arr(0.1829591205,'kpc').in_units('code_length')
-    #print 'Natural Refinement Resolution: ',dx.in_units('kpc')
-    num_cells = np.ceil(rb_width/dx)
-    #res_list = [0.5,1,5,10]
-    lines = ['HAlpha','CIII_977','CIV','SiIV','OVI']
+    dx = np.unique(rb['dx'])[1]
+    dxs_list = [0.5,1,5,10]
+    dxs_list = [ds.quan(q,'kpc').in_units('code_length') for q in dxs_list]
+    res_list = np.append(dx,dxs_list)
+    res_list = ds.arr(res_list,'code_length')
 
     for line in lines:
         field = 'Emission_'+line
         print line
-
         for index in 'xyz':
             print index
+            for res in res_list:
+                reskpc = round(res.in_units('kpc'),2)
+                print reskpc,' kpc'
+                num_cells = np.ceil(rb_width/res)
 
-            #obj = ds.proj('H_nuclei_density',index,data_source=rb,weight_field='H_nuclei_density')
-            obj = ds.proj('H_nuclei_density',index,data_source=rb,weight_field=field)
-            frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
-            #fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+'hden_forcedres.cpkl'
-            #print fileout
-
-            #fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_'+str(res)+'kpc.cpkl'
-            fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_forcedres.cpkl'
-            cPickle.dump(frb['H_nuclei_density'],open(fileout,'wb'),protocol=-1)
+                if res == res_list[0]:
+                    filehden = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_forcedres.cpkl'
+                    filetemp = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_forcedres.cpkl'
+                else:
+                    filehden = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_'+str(reskpc)+'kpc.cpkl'
+                    filetemp = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_'+str(reskpc)+'kpc.cpkl'
 
 
-            obj = ds.proj('temperature',index,data_source=rb,weight_field=field)
-            frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
-            #fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_Whden_forcedres.cpkl'
-            #print fileout
+                obj = ds.proj('H_nuclei_density',index,data_source=rb,weight_field=field)
+                frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
+                cPickle.dump(frb['H_nuclei_density'],open(filehden,'wb'),protocol=-1)
 
-            #fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_'+str(res)+'kpc.cpkl'
-            fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_forcedres.cpkl'
-            cPickle.dump(frb['temperature'],open(fileout,'wb'),protocol=-1)
-
+                obj = ds.proj('temperature',index,data_source=rb,weight_field=field)
+                frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
+                cPickle.dump(frb['temperature'],open(filetemp,'wb'),protocol=-1)
     return
-	#for res in res_list:
-    #	print res
-        #dx = ds.arr(res,'kpc').in_units('code_length').value
-        #num_cells = np.ceil(rb_width/dx)
 
 def plot_ytProjections():
     fileout = args[-3]+'_'+args[-2]+'_'+field+'_'+index+'_refwidth'
@@ -461,4 +440,4 @@ def holoviews_SB_profiles(box_width):
             renderer.save(pltout, fileout)
     return
 
-create_coldens_frbs()
+create_emission_frbs()
