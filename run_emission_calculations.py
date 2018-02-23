@@ -4,13 +4,12 @@ import numpy as np
 from astropy.table import Table
 import cPickle
 from emission_functions import *
-import brewer2mpl as brew
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import matplotlib as mpl
 from astropy.cosmology import WMAP9 as cosmo
-from matplotlib import colors
 import trident
 import seaborn as sns
+import matplotlib.colors as mcolors
 
 import holoviews as hv
 import pandas as pd
@@ -26,8 +25,6 @@ lines = ['HAlpha','OVI','CIV','CIII_977','SiIV']
 track_name = base+"/halo_track"
 args = fn.split('/')
 
-bmap = brew.get_map('PuRd','Sequential',9)
-pink_cmap = bmap.get_mpl_colormap(N=1000, gamma=2.0)
 detect_color_key = {b'nope':'#808080',
                     b'poss':'#FF69B4',
                     b'prob':'#00CED1',
@@ -40,6 +37,15 @@ detect_limits = {'nope':(-10,1),
 
 fontcs ={'fontname':'Helvetica','fontsize':16}
 mpl.rc('text', usetex=True)
+
+### Fancy seaborn colormaps!! ###
+sns.set_style("whitegrid", {'axes.grid' : False})
+colors1 = plt.cm.Greys(np.linspace(0., 0.8, 192))
+sns_cmap2 = sns.blend_palette(('Pink','DeepPink','#1E90FF','DarkTurquoise','#50A638'), n_colors=40,as_cmap=True)
+colors2 = sns_cmap2(np.linspace(0.,1,64))
+colors = np.vstack((colors1, colors2))
+mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
+
 
 ds = yt.load(fn)
 track = Table.read(track_name, format='ascii')
@@ -165,10 +171,7 @@ def make_emission_gif_plots():
     make_obs = True
 
     if make_obs:
-        cmap = colors.ListedColormap(['Gray','HotPink','DarkTurquoise','Chartreuse'])
-        bounds = [-5,1,2,3,5]
-        norm = colors.BoundaryNorm(bounds,cmap.N)
-        cmap = 'viridis'
+        cmap = mymap
         norm = None
     else:
         cmap = 'viridis'
@@ -208,38 +211,26 @@ def make_emission_gif_plots():
                 fig.set_size_inches(14,6)
 
 
-                test = np.ma.masked_where((frbNAT < 1),frbNAT)
-                ax[0].imshow(frbNAT,cmap='Greys',vmin=-3,vmax=1,
+                ax[0].imshow(frbNAT,cmap=cmap,vmin=-5,vmax=3,
                              extent=(bsL,bsR,bsR,bsL),origin='lower',
                              interpolation=None)
-                ax[0].imshow(test,cmap='PuRd',vmin=1,vmax=3,
-                            extent=(bsL,bsR,bsR,bsL),origin='lower',
-                            interpolation=None)
 
-                test = np.ma.masked_where((frbREF < 1),frbREF)
-                ax[1].imshow(frbREF,cmap='Greys',vmin=-3,vmax=1,
+                ax[1].imshow(frbREF,cmap=cmap,vmin=-5,vmax=3,
                              extent=(bsL,bsR,bsR,bsL),origin='lower',
                              interpolation=None)
-                ax[1].imshow(test,cmap='PuRd',vmin=1,vmax=3,
-                            extent=(bsL,bsR,bsR,bsL),origin='lower',
-                            interpolation=None)
 
-                test = np.ma.masked_where((frbN11 < 1),frbN11)
-                ax[2].imshow(frbN11,cmap='Greys',vmin=-3,vmax=1,
+                im2 = ax[2].imshow(frbN11,cmap=cmap,vmin=-5,vmax=3,
                              extent=(bsL,bsR,bsR,bsL),origin='lower',
                              interpolation=None)
-                ax[2].imshow(test,cmap='PuRd',vmin=1,vmax=3,
-                            extent=(bsL,bsR,bsR,bsL),origin='lower',
-                            interpolation=None)
 
-                #axins = inset_axes(ax[2],width="5%", height="100%",loc=3,
-                #                   bbox_to_anchor=(1.07, 0.0, 1, 1),
-                #                   bbox_transform=ax[2].transAxes,borderpad=0)
+                axins = inset_axes(ax[2],width="5%", height="100%",loc=3,
+                                   bbox_to_anchor=(1.07, 0.0, 1, 1),
+                                   bbox_transform=ax[2].transAxes,borderpad=0)
 
                 ax[0].set_title('Natural',**fontrc)
                 ax[1].set_title('Forced Refine 10',**fontrc)
                 ax[2].set_title('Forced Refine 11',**fontrc)
-                #cb = fig.colorbar(im2, cax=axins,label=r'log( photons s$^{-1}$ cm$^{-2}$ sr$^{-1}$)')
+                cb = fig.colorbar(im2, cax=axins,label=r'log( photons s$^{-1}$ cm$^{-2}$ sr$^{-1}$)')
                 if line == 'CIII_977':
                     lineout = 'CIII 977'
                 else:
