@@ -10,6 +10,7 @@ import matplotlib as mpl
 from astropy.cosmology import WMAP9 as cosmo
 from matplotlib import colors
 import trident
+import seaborn as sns
 
 import holoviews as hv
 import pandas as pd
@@ -18,9 +19,9 @@ from holoviews.operation.datashader import datashade
 from holoviews import Store
 hv.extension('matplotlib')
 
-#base = "/Users/dalek/data/Molly/natural/nref11"
-base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
-fn = base+"/RD0020/RD0020"
+base = "/Users/dalek/data/Molly/natural/nref11"
+#base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+fn = base+"/RD0016/RD0016"
 lines = ['HAlpha','OVI','CIV','CIII_977','SiIV']
 track_name = base+"/halo_track"
 args = fn.split('/')
@@ -153,11 +154,12 @@ def plot_ytProjections():
     return
 
 def make_emission_gif_plots():
-    natural_base = '_nref11_RD0020_'
-    refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0020_'
+    natural_base = '_nref11_RD0016_'
+    refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0016_'
+    nref11f_base = '_nref11f_refine200kpc_z4to2_RD0016_'
     box_size = ds.arr(rb_width,'code_length').in_units('kpc')
     box_size = np.ceil(box_size/2.)
-    res_list = [0.2,0.5,1,5,10]
+    res_list = [0.2,0.5,1.0,5.0,10.0]
     fontrc ={'fontname':'Helvetica','fontsize':20}
     mpl.rc('text', usetex=True)
     make_obs = True
@@ -166,8 +168,10 @@ def make_emission_gif_plots():
         cmap = colors.ListedColormap(['Gray','HotPink','DarkTurquoise','Chartreuse'])
         bounds = [-5,1,2,3,5]
         norm = colors.BoundaryNorm(bounds,cmap.N)
+        cmap = 'viridis'
+        norm = None
     else:
-        cmap = 'virdis'
+        cmap = 'viridis'
         norm = None
 
     for line in lines:
@@ -177,47 +181,71 @@ def make_emission_gif_plots():
                 if res == res_list[0]:
                     fileinNAT = 'frbs/frb'+index+natural_base+field+'_forcedres.cpkl'
                     fileinREF = 'frbs/frb'+index+refined_base+field+'_forcedres.cpkl'
+                    fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
                     pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*0.182959,2)
                 else:
                     fileinNAT = 'frbs/frb'+index+natural_base+field+'_'+str(res)+'kpc.cpkl'
                     fileinREF = 'frbs/frb'+index+refined_base+field+'_'+str(res)+'kpc.cpkl'
+                    fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_'+str(res)+'kpc.cpkl'
                     pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*res,2)
 
                 frbNAT = cPickle.load(open(fileinNAT,'rb'))
                 frbREF = cPickle.load(open(fileinREF,'rb'))
+                frbN11 = cPickle.load(open(fileinN11,'rb'))
 
                 if make_obs == True:
                     frbNAT = np.log10(frbNAT/(1.+redshift)**4)
                     frbREF = np.log10(frbREF/(1.+redshift)**4)
+                    frbN11 = np.log10(frbN11/(1.+redshift)**4)
                 else:
                     frbNAT = np.log10(frbNAT)
                     frbREF = np.log10(frbREF)
+                    frbN11 = np.log10(frbN11)
 
                 bsL,bsR = -1*box_size.value,box_size.value
 
-                fig,ax = plt.subplots(1,2)
-                fig.set_size_inches(10,6)
+                fig,ax = plt.subplots(1,3)
+                fig.set_size_inches(14,6)
 
-                im = ax[0].imshow(frbNAT,extent=(bsL,bsR,bsR,bsL),
-                                  vmin=-2,vmax=6,interpolation=None,
-                                  cmap=cmap,norm=norm,origin='lower')
-                im1= ax[1].imshow(frbREF,extent=(bsL,bsR,bsR,bsL),
-                                  vmin=-2,vmax=6,interpolation=None,
-                                  cmap=cmap,norm=norm,origin='lower')
 
-                axins = inset_axes(ax[1],width="5%", height="100%",loc=3,
-                                   bbox_to_anchor=(1.07, 0.0, 1, 1),
-                                   bbox_transform=ax[1].transAxes,borderpad=0)
+                test = np.ma.masked_where((frbNAT < 1),frbNAT)
+                ax[0].imshow(frbNAT,cmap='Greys',vmin=-3,vmax=1,
+                             extent=(bsL,bsR,bsR,bsL),origin='lower',
+                             interpolation=None)
+                ax[0].imshow(test,cmap='PuRd',vmin=1,vmax=3,
+                            extent=(bsL,bsR,bsR,bsL),origin='lower',
+                            interpolation=None)
+
+                test = np.ma.masked_where((frbREF < 1),frbREF)
+                ax[1].imshow(frbREF,cmap='Greys',vmin=-3,vmax=1,
+                             extent=(bsL,bsR,bsR,bsL),origin='lower',
+                             interpolation=None)
+                ax[1].imshow(test,cmap='PuRd',vmin=1,vmax=3,
+                            extent=(bsL,bsR,bsR,bsL),origin='lower',
+                            interpolation=None)
+
+                test = np.ma.masked_where((frbN11 < 1),frbN11)
+                ax[2].imshow(frbN11,cmap='Greys',vmin=-3,vmax=1,
+                             extent=(bsL,bsR,bsR,bsL),origin='lower',
+                             interpolation=None)
+                ax[2].imshow(test,cmap='PuRd',vmin=1,vmax=3,
+                            extent=(bsL,bsR,bsR,bsL),origin='lower',
+                            interpolation=None)
+
+                #axins = inset_axes(ax[2],width="5%", height="100%",loc=3,
+                #                   bbox_to_anchor=(1.07, 0.0, 1, 1),
+                #                   bbox_transform=ax[2].transAxes,borderpad=0)
 
                 ax[0].set_title('Natural',**fontrc)
-                ax[1].set_title('Forced Refine',**fontrc)
-                cb = fig.colorbar(im1, cax=axins,label=r'log( photons s$^{-1}$ cm$^{-2}$ sr$^{-1}$)')
+                ax[1].set_title('Forced Refine 10',**fontrc)
+                ax[2].set_title('Forced Refine 11',**fontrc)
+                #cb = fig.colorbar(im2, cax=axins,label=r'log( photons s$^{-1}$ cm$^{-2}$ sr$^{-1}$)')
                 if line == 'CIII_977':
                     lineout = 'CIII 977'
                 else:
                     lineout = line
-                fig.suptitle('z=2, '+lineout+', '+str(res)+'kpc'+', '+str(pixsize)+'"',**fontrc)
-                plt.savefig('z2_'+index+'_'+field+'_'+str(res)+'kpc_SBdim_obscol.pdf')
+                fig.suptitle('z=3, '+lineout+', '+str(res)+'kpc'+', '+str(pixsize)+'"',**fontrc)
+                plt.savefig('z3_'+index+'_'+field+'_'+str(res)+'kpc_SBdim_obscol.pdf')
                 plt.close()
 
     return
@@ -371,8 +399,9 @@ def hvPoints_by_detect_prob(df,prob,hvplot=None):
 
 def holoviews_SB_profiles(box_width):
     renderer = Store.renderers['matplotlib'].instance(fig='pdf', holomap='gif')
-    natural_base = '_nref11_RD0020_'
-    refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0020_'
+    natural_base = '_nref11_RD0016_'
+    refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0016_'
+    nfef11f_base = '_nref11f_refine200kpc_z4to2_RD0016_'
     box_size = ds.arr(rb_width,'code_length').in_units('kpc')
     res_list = [0.2,1,5,10]
     fontrc={'fontname':'Helvetica','fontsize':20}
@@ -440,4 +469,6 @@ def holoviews_SB_profiles(box_width):
             renderer.save(pltout, fileout)
     return
 
-create_emission_frbs()
+make_emission_gif_plots()
+
+#create_emission_frbs()
