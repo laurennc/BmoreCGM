@@ -8,8 +8,9 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import matplotlib as mpl
 from astropy.cosmology import WMAP9 as cosmo
 import trident
-import seaborn as sns
+#import seaborn as sns
 import matplotlib.colors as mcolors
+import matplotlib.cm as cm
 
 import holoviews as hv
 import pandas as pd
@@ -18,8 +19,8 @@ from holoviews.operation.datashader import datashade
 from holoviews import Store
 hv.extension('matplotlib')
 
-base = "/Users/dalek/data/Molly/natural/nref11"
-#base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+#base = "/Users/dalek/data/Molly/natural/nref11"
+base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 fn = base+"/RD0016/RD0016"
 lines = ['HAlpha','OVI','CIV','CIII_977','SiIV']
 track_name = base+"/halo_track"
@@ -39,12 +40,12 @@ fontcs ={'fontname':'Helvetica','fontsize':16}
 mpl.rc('text', usetex=True)
 
 ### Fancy seaborn colormaps!! ###
-sns.set_style("whitegrid", {'axes.grid' : False})
-colors1 = plt.cm.Greys(np.linspace(0., 0.8, 192))
-sns_cmap2 = sns.blend_palette(('Pink','DeepPink','#1E90FF','DarkTurquoise','#50A638'), n_colors=40,as_cmap=True)
-colors2 = sns_cmap2(np.linspace(0.,1,64))
-colors = np.vstack((colors1, colors2))
-mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
+#sns.set_style("white", {'axes.grid' : False})
+#colors1 = plt.cm.Greys(np.linspace(0., 0.8, 192))
+#sns_cmap2 = sns.blend_palette(('Pink','DeepPink','#1E90FF','DarkTurquoise','#50A638'), n_colors=40,as_cmap=True)
+#colors2 = sns_cmap2(np.linspace(0.,1,64))
+#colors = np.vstack((colors1, colors2))
+#mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
 
 
 ds = yt.load(fn)
@@ -460,6 +461,31 @@ def holoviews_SB_profiles(box_width):
             renderer.save(pltout, fileout)
     return
 
-make_emission_gif_plots()
+def holoviews_radial_profiles():
+    dens = np.log10(rb['H_nuclei_density'])
+    temp = np.log10(rb['Temperature'])
+    Zgas = np.log10(rb['metallicity'])
+    x = rb['x']
+    y = rb['y']
+    z = rb['z']
 
-#create_emission_frbs()
+    halo_center = ds.arr(rb_center,'code_length')
+    dist = np.sqrt((halo_center[0]-rb['x'])**2.+(halo_center[1]-rb['y'])**2.+(halo_center[2]-rb['z'])**2.).in_units('kpc')
+
+    df = pd.DataFrame({'temp':temp, 'dens':dens, 'Zgas':Zgas,
+                        'x':x,'y':y,'z':z,'dist':dist})
+
+    temp_dist = hv.Scatter(df,kdims=['dist'],vdims=['temp'],label="Temperature ")
+    dens_dist = hv.Scatter(df,kdims=['dist'],vdims=['dens'],label='Hydrogen Number Density')
+    metal_dist = hv.Scatter(df,kdims=['dist'],vdims=['Zgas'],label='Metallicity')
+
+    dist_plots = (datashade(temp_dist,cmap=cm.Reds, dynamic=False,x_range=(0,60),y_range=(2,8.4)).opts(plot=dict(aspect='square'))
+                  + datashade(dens_dist,cmap=cm.Blues, dynamic=False,x_range=(0,60),y_range=(-8,2)).opts(plot=dict(aspect='square'))
+                  + datashade(metal_dist,cmap=cm.BuGn, dynamic=False,x_range=(0,60),y_range=(-6,1.4)).opts(plot=dict(aspect='square')))
+
+    renderer = Store.renderers['matplotlib'].instance(fig='pdf', holomap='gif')
+    fileout= 'basic_profile_'+args[-3]+'_'+args[-1]
+    renderer.save(dist_plots, fileout)
+    return
+
+holoviews_radial_profiles()
