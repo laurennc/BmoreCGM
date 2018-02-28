@@ -395,9 +395,9 @@ def holoviews_SB_profiles(box_width):
     renderer = Store.renderers['matplotlib'].instance(fig='pdf', holomap='gif')
     natural_base = '_nref11_RD0016_'
     refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0016_'
-    nfef11f_base = '_nref11f_refine200kpc_z4to2_RD0016_'
+    nref11f_base = '_nref11f_refine200kpc_z4to2_RD0016_'
     box_size = ds.arr(rb_width,'code_length').in_units('kpc')
-    res_list = [0.2,1,5,10]
+    res_list = [0.2,1.0,5.0,10.0]
     fontrc={'fontname':'Helvetica','fontsize':20}
     mpl.rc('text',usetex=True)
     #rb_width = ds.arr(rb_width,'code_length').in_units('kpc')
@@ -413,18 +413,24 @@ def holoviews_SB_profiles(box_width):
                 if res == res_list[0]:
                     fileinNAT = 'frbs/frb'+index+natural_base+field+'_forcedres.cpkl'
                     fileinREF = 'frbs/frb'+index+refined_base+field+'_forcedres.cpkl'
+                    fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
                 else:
                     fileinNAT = 'frbs/frb'+index+natural_base+field+'_'+str(res)+'kpc.cpkl'
                     fileinREF = 'frbs/frb'+index+refined_base+field+'_'+str(res)+'kpc.cpkl'
+                    fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_'+str(res)+'kpc.cpkl'
 
                 frbNAT = cPickle.load(open(fileinNAT,'rb'))
                 frbNAT = np.log10(frbNAT/(1+redshift)**4)
                 frbREF = cPickle.load(open(fileinREF,'rb'))
                 frbREF = np.log10(frbREF/(1+redshift)**4)
+                frbN11 = cPickle.load(open(fileinN11,'rb'))
+                frbN11 = np.log10(frbN11/(1+redshift)**4)
 
-                r = make_radius_array(box_width,frbNAT)
+                r,xL,dr,nrad,radial  = make_radius_array(box_width,frbNAT)
+                r2,xL,dr,nrad,radial = make_radius_array(box_width,frbN11)
                 dfREF = make_emis_pdframe(frbREF,r)
                 dfNAT = make_emis_pdframe(frbNAT,r)
+                dfN11 = make_emis_pdframe(frbN11,r2)
 
                 if (res < 2):
                     llim = dfREF['emis'].min()-0.1
@@ -438,11 +444,17 @@ def holoviews_SB_profiles(box_width):
                                     aggregator=dshade.count_cat('detect_prob'), y_range=(llim,6),
                                     dynamic=False).opts(plot=dict(aspect='square'))
 
+                    pN11 = hv.Points(dfN11,kdims=['dist','emis'])
+                    shadeN11 = datashade(pN11,color_key=detect_color_key,
+                                    aggregator=dshade.count_cat('detect_prob'),y_range=(llim,6),
+                                    dynamic=False).opts(plot=dict(aspect='square'))
+
                     if res == res_list[0]:
-                        colsREF,colsNAT = shadeREF,shadeNAT
+                        colsREF,colsNAT,colsN11 = shadeREF,shadeNAT,shadeN11
                     else:
                         colsREF = colsREF + shadeREF
                         colsNAT = colsNAT + shadeNAT
+                        colsN11 = colsN11 + shadeN11
 
                 else:
                     i = 0
@@ -450,16 +462,19 @@ def holoviews_SB_profiles(box_width):
                         if i == 0:
                             pltREF = hvPoints_by_detect_prob(dfREF,detect_limits.keys()[i])
                             pltNAT = hvPoints_by_detect_prob(dfNAT,detect_limits.keys()[i])
+                            pltN11 = hvPoints_by_detect_prob(dfN11,detect_limits.keys()[i])
                         else:
                             pltREF = hvPoints_by_detect_prob(dfREF,detect_limits.keys()[i],hvplot=pltREF)
                             pltNAT = hvPoints_by_detect_prob(dfNAT,detect_limits.keys()[i],hvplot=pltNAT)
+                            pltN11 = hvPoints_by_detect_prob(dfN11,detect_limits.keys()[i],hvplot=pltN11)
                         i = i + 1
 
                     colsREF = colsREF + pltREF
                     colsNAT = colsNAT + pltNAT
+                    colsN11 = colsN11 + pltN11
 
-            pltout = (colsREF + colsNAT).cols(len(res_list))
-            fileout= 'SBprofile_z2_'+index+'_'+field
+            pltout = (colsREF + colsNAT + colsN11).cols(len(res_list))
+            fileout= 'SBprofile_z3_'+index+'_'+field
             renderer.save(pltout, fileout)
     return
 
@@ -591,5 +606,6 @@ def covering_fraction_by_radius(rb_width,SB_cutoff=1.):
 
     return
 
-covering_fraction_by_radius(rb_width)
+holoviews_SB_profiles(box_width)
+#covering_fraction_by_radius(rb_width)
 #holoviews_radial_profiles(weight_by='cell_mass')
