@@ -15,7 +15,7 @@ import matplotlib.cm as cm
 import holoviews as hv
 import pandas as pd
 import datashader as dshade
-from holoviews.operation.datashader import datashade
+from holoviews.operation.datashader import datashade, aggregate
 from holoviews import Store
 hv.extension('matplotlib')
 
@@ -31,13 +31,15 @@ detect_color_key = {b'nope':'#808080',
                     b'prob':'#00CED1',
                     b'defi': '#32CD32'} #'#7FFF00'}
 
+line_color_key = {'OVI':'#2554C7','CIII_977':'#7D0552','CIV':'#438D80','SiIV':'#F75D59'}#,'HAlpha':''
+
 detect_limits = {'nope':(-10,1),
                  'poss':(1,2),
                  'prob':(2,3),
                  'defi':(3,10)}
 
 fontcs ={'fontname':'Helvetica','fontsize':16}
-mpl.rc('text', usetex=True)
+#mpl.rc('text', usetex=True)
 
 ### Fancy seaborn colormaps!! ###
 #sns.set_style("white", {'axes.grid' : False})
@@ -308,10 +310,10 @@ def make_radius_array(rb_width,frbarr):
 	xL = np.linspace(-1*box_size,box_size,num_cells)
 	xL2,yL = np.meshgrid(xL,xL)
 	r = abs(xL2+1j*yL)
-	#dr = np.abs([xL2[0,0]-xL2[0,1]])
-	#radial = np.arange(box_size/dr)*dr + dr/2
-	#nrad = len(radial)
-	return r #,xL,dr,nrad
+	dr = np.abs([xL2[0,0]-xL2[0,1]])
+	radial = np.arange(box_size/dr)*dr + dr/2
+	nrad = len(radial)
+	return r,xL,dr,nrad,radial
 
 def plot_scatter_points_obscolors(ax,frbarr,r):
     colors = ['Chartreuse','DarkTurquoise','HotPink','Grey']
@@ -461,10 +463,12 @@ def holoviews_SB_profiles(box_width):
             renderer.save(pltout, fileout)
     return
 
-def holoviews_radial_profiles():
+def holoviews_radial_profiles(weight_by=None):
     dens = np.log10(rb['H_nuclei_density'])
     temp = np.log10(rb['Temperature'])
     Zgas = np.log10(rb['metallicity'])
+    cell_mass = rb['cell_mass'].in_units('Msun')
+    cell_volume = rb['cell_volume'].in_units('kpc**3')
     x = rb['x']
     y = rb['y']
     z = rb['z']
@@ -472,20 +476,120 @@ def holoviews_radial_profiles():
     halo_center = ds.arr(rb_center,'code_length')
     dist = np.sqrt((halo_center[0]-rb['x'])**2.+(halo_center[1]-rb['y'])**2.+(halo_center[2]-rb['z'])**2.).in_units('kpc')
 
-    df = pd.DataFrame({'temp':temp, 'dens':dens, 'Zgas':Zgas,
-                        'x':x,'y':y,'z':z,'dist':dist})
+    df = pd.DataFrame({'temp':temp, 'dens':dens, 'Zgas':Zgas,'cell_volume':cell_volume,
+                        'x':x,'y':y,'z':z,'dist':dist,'cell_mass':cell_mass})
 
     temp_dist = hv.Scatter(df,kdims=['dist'],vdims=['temp'],label="Temperature ")
     dens_dist = hv.Scatter(df,kdims=['dist'],vdims=['dens'],label='Hydrogen Number Density')
     metal_dist = hv.Scatter(df,kdims=['dist'],vdims=['Zgas'],label='Metallicity')
 
-    dist_plots = (datashade(temp_dist,cmap=cm.Reds, dynamic=False,x_range=(0,60),y_range=(2,8.4)).opts(plot=dict(aspect='square'))
-                  + datashade(dens_dist,cmap=cm.Blues, dynamic=False,x_range=(0,60),y_range=(-8,2)).opts(plot=dict(aspect='square'))
-                  + datashade(metal_dist,cmap=cm.BuGn, dynamic=False,x_range=(0,60),y_range=(-6,1.4)).opts(plot=dict(aspect='square')))
+    if weight_by == None:
+        dist_plots = (datashade(temp_dist,cmap=cm.Reds, dynamic=False,x_range=(0,60),y_range=(2,8.4)).opts(plot=dict(aspect='square'))
+                    + datashade(dens_dist,cmap=cm.Blues, dynamic=False,x_range=(0,60),y_range=(-6.5,2)).opts(plot=dict(aspect='square'))
+                    + datashade(metal_dist,cmap=cm.BuGn, dynamic=False,x_range=(0,60),y_range=(-8.5,1.4)).opts(plot=dict(aspect='square')))
+        fileout= 'basic_profile_'+args[-3]+'_'+args[-1]
+
+    if weight_by == 'cell_mass':
+        temp_shade = aggregate(hv.Scatter(df,['dist','temp']),y_range=(2,8.4),aggregator=dshade.sum('cell_mass'))
+        temp_shade = temp_shade.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cm.Reds))
+        dens_shade = aggregate(hv.Scatter(df,['dist','dens']),y_range=(-7,2.5),aggregator=dshade.sum('cell_mass'))
+        dens_shade = dens_shade.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cm.Blues))
+        metal_shade = aggregate(hv.Scatter(df,['dist','Zgas']),y_range=(-7,2.5),aggregator=dshade.sum('cell_mass'))
+        metal_shade = metal_shade.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cm.BuGn))
+
+        dist_plots = (temp_shade + dens_shade + metal_shade)
+        fileout = 'basic_profile_cell_mass_'+args[-3]+'_'+args[-1]
+
+    if weight_by == 'cell_volume':
+        temp_shade = aggregate(hv.Scatter(df,['dist','temp']),y_range=(2,8.4),aggregator=dshade.sum('cell_volume'))
+        temp_shade = temp_shade.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cm.Reds))
+        dens_shade = aggregate(hv.Scatter(df,['dist','dens']),y_range=(-7,2.5),aggregator=dshade.sum('cell_volume'))
+        dens_shade = dens_shade.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cm.Blues))
+        metal_shade = aggregate(hv.Scatter(df,['dist','Zgas']),y_range=(-7,2.5),aggregator=dshade.sum('cell_volume'))
+        metal_shade = metal_shade.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cm.BuGn))
+
+        dist_plots = (temp_shade + dens_shade + metal_shade)
+        fileout = 'basic_profile_cell_vol_'+args[-3]+'_'+args[-1]
 
     renderer = Store.renderers['matplotlib'].instance(fig='pdf', holomap='gif')
-    fileout= 'basic_profile_'+args[-3]+'_'+args[-1]
     renderer.save(dist_plots, fileout)
     return
 
-holoviews_radial_profiles()
+def covering_fraction_by_radius(rb_width,SB_cutoff=1.):
+    natural_base = '_nref11_RD0016_'
+    refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0016_'
+    nref11f_base = '_nref11f_refine200kpc_z4to2_RD0016_'
+
+    rb_width = ds.quan(rb_width,'code_length').in_units('kpc')
+    rb_width = float(rb_width.value)
+
+    fig,ax = plt.subplots(1,3,sharey=True)
+    fig.set_size_inches(12,4)
+
+    lines = ['OVI','CIV','CIII_977','SiIV']
+    res_list = ['Native',1.0,10.0]
+    i,index,res = 1,'x',0.5
+
+    #while i < len(res_list):
+        #res = res_list[i]
+    for line in lines:
+            field = 'Emission_'+line
+            if i == 0:
+                fileinNAT = 'frbs/frb'+index+natural_base+field+'_forcedres.cpkl'
+                fileinREF = 'frbs/frb'+index+refined_base+field+'_forcedres.cpkl'
+                fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
+            else:
+                fileinNAT = 'frbs/frb'+index+natural_base+field+'_'+str(res)+'kpc.cpkl'
+                fileinREF = 'frbs/frb'+index+refined_base+field+'_'+str(res)+'kpc.cpkl'
+                fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_'+str(res)+'kpc.cpkl'
+
+            frbNAT = cPickle.load(open(fileinNAT,'rb'))
+            frbREF = cPickle.load(open(fileinREF,'rb'))
+            frbN11 = cPickle.load(open(fileinN11,'rb'))
+
+            frbNAT = np.log10(frbNAT/(1.+redshift)**4)
+            frbREF = np.log10(frbREF/(1.+redshift)**4)
+            frbN11 = np.log10(frbN11/(1.+redshift)**4)
+
+            r,xL,dr,nrad,radial = make_radius_array(rb_width,frbREF)
+            r2,xL2,dr2,nrad2,radial2 = make_radius_array(rb_width,frbN11)
+            cfNAT,cfREF,cfN11 = np.zeros(nrad),np.zeros(nrad),np.zeros(nrad2)
+
+            irad = 0
+            while irad < nrad:
+                minrad = irad*dr
+                maxrad = minrad + dr
+
+                idx = np.where((r>=minrad) & (r<maxrad) & (frbNAT > SB_cutoff))[0]
+                idp = np.where((r>=minrad) & (r<maxrad))[0]
+                cfNAT[irad] = float(len(idx))/float(len(idp))
+
+                idx = np.where((r>=minrad) & (r<maxrad) & (frbREF > SB_cutoff))[0]
+                cfREF[irad] = float(len(idx))/float(len(idp))
+                irad = irad + 1
+
+            irad = 0
+            while irad < nrad2:
+                minrad = irad*dr2
+                maxrad = minrad + dr2
+                idx = np.where((r2>=minrad) & (r2<maxrad) & (frbN11 > SB_cutoff))[0]
+                idp = np.where((r2>=minrad) & (r2<maxrad))[0]
+                cfN11[irad] = float(len(idx))/float(len(idp))
+                irad = irad + 1
+
+            ax[0].plot(radial,cfREF,lw=1.5,color=line_color_key[line],label=line)
+            ax[1].plot(radial,cfNAT,lw=1.5,ls='--',color=line_color_key[line])
+            ax[2].plot(radial2,cfN11,lw=1.5,ls='-.',color=line_color_key[line])
+            #ax[i].set_title(str(res_list[i]))
+
+            #i = i + 1
+    #print radial
+    ax[1].set_xlabel('Radius [kpc]')
+    ax[0].set_ylabel('Covering Fraction')
+    ax[0].legend()
+    plt.savefig('testing_covering_frac_0.5kpc.pdf')
+
+    return
+
+covering_fraction_by_radius(rb_width)
+#holoviews_radial_profiles(weight_by='cell_mass')
