@@ -22,7 +22,7 @@ hv.extension('matplotlib')
 #base = "/Users/dalek/data/Molly/natural/nref11"
 base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 fn = base+"/RD0016/RD0016"
-lines = ['HAlpha','OVI','CIV','CIII_977','SiIV']
+lines = ['OVI','CIV','CIII_977','SiIV'] ## 'HAlpha',
 track_name = base+"/halo_track"
 args = fn.split('/')
 
@@ -606,6 +606,66 @@ def covering_fraction_by_radius(rb_width,SB_cutoff=1.):
 
     return
 
-holoviews_SB_profiles(box_width)
-#covering_fraction_by_radius(rb_width)
-#holoviews_radial_profiles(weight_by='cell_mass')
+def cumulative_distribution_function(ax,line,res,rb_width):
+    field = 'Emission_'+line
+    bases = ['_nref11_RD0016_','_nref11n_nref10f_refine200kpc_z4to2_RD0016_','_nref11f_refine200kpc_z4to2_RD0016_']
+    #colors = ['3 colors here!']
+
+    rb_width = ds.quan(rb_width,'code_length').in_units('kpc')
+    rb_width = float(rb_width.value)
+
+    bins = np.linspace(-1.5,3.5,11)
+    index = 'x'
+
+    ls = iter(['-.', '-', '--'])
+    for base in bases:
+        if res == 'forced':
+            filein = 'frbs/frb'+index+base+field+'_forcedres.cpkl'
+        else:
+            filein = 'frbs/frb'+index+base+field+'_'+str(res)+'kpc.cpkl'
+
+        frb = cPickle.load(open(filein,'rb'))
+        frb = np.log10(frb/(1.+redshift)**4)
+        frb = frb.flatten()
+
+        hist = np.zeros(len(bins))
+        i = 0
+        while i < len(bins):
+            if i == 0:
+                num_pix = np.where(frb < bins[i])[0]
+                hist[i] = float(len(num_pix))/len(frb)
+            elif i == len(bins)-1:
+                num_pix = np.where(frb >= bins[i])[0]
+                hist[i] = float(len(num_pix))/len(frb)
+            else:
+                num_pix = np.where((frb < bins[i+1]) & (frb >= bins[i]))[0]
+                hist[i] = float(len(num_pix))/len(frb)
+            i = i + 1
+
+        label_out = base.split('_')[1]
+        ls_here = ls.next()
+        ax.plot(bins,hist,label=label_out,color=line_color_key[line],linestyle=ls_here,lw=1.5)
+        ax.plot(bins,hist,color=line_color_key[line],marker='s',linestyle=ls_here,lw=1.5)
+
+    #ax.set_xlabel('SB')
+    #ax.set_ylabel('Pix Fraction')
+    ax.set_xlim(-1,3)
+    ax.set_ylim(-0.01,0.41)
+    ax.legend()
+    #plt.savefig('SB_cdf_RD0016_'+field+'_forcedres.pdf')
+    #plt.close()
+
+    return
+
+def cdf_plot_loop():
+    fig,ax = plt.subplots(2,2,sharex=True,sharey=True)
+    fig.set_size_inches(6,6)
+    ax = ax.flatten()
+    subplts = iter(ax)
+    for line in lines:
+        cumulative_distribution_function(subplts.next(),line,'forced',rb_width)
+
+    plt.tight_layout()
+    plt.savefig('SB_cdf_RD0016_all_forced.pdf')
+    plt.close()
+    return
