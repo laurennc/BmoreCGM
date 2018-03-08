@@ -8,7 +8,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import matplotlib as mpl
 from astropy.cosmology import WMAP9 as cosmo
 import trident
-#import seaborn as sns
+import seaborn as sns
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 
@@ -21,8 +21,8 @@ hv.extension('matplotlib')
 
 #base = "/Users/dalek/data/Molly/natural/nref11"
 base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
-fn = base+"/RD0016/RD0016"
-lines = ['OVI','CIV','CIII_977','SiIV'] ## 'HAlpha',
+fn = base+"/RD0020/RD0020"
+lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 track_name = base+"/halo_track"
 args = fn.split('/')
 
@@ -42,12 +42,12 @@ fontcs ={'fontname':'Helvetica','fontsize':16}
 #mpl.rc('text', usetex=True)
 
 ### Fancy seaborn colormaps!! ###
-#sns.set_style("white", {'axes.grid' : False})
-#colors1 = plt.cm.Greys(np.linspace(0., 0.8, 192))
-#sns_cmap2 = sns.blend_palette(('Pink','DeepPink','#1E90FF','DarkTurquoise','#50A638'), n_colors=40,as_cmap=True)
-#colors2 = sns_cmap2(np.linspace(0.,1,64))
-#colors = np.vstack((colors1, colors2))
-#mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
+sns.set_style("white", {'axes.grid' : False})
+colors1 = plt.cm.Greys(np.linspace(0., 0.8, 192))
+sns_cmap2 = sns.blend_palette(('Pink','DeepPink','#1E90FF','DarkTurquoise','#50A638'), n_colors=40,as_cmap=True)
+colors2 = sns_cmap2(np.linspace(0.,1,64))
+colors = np.vstack((colors1, colors2))
+mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
 
 
 ds = yt.load(fn)
@@ -57,6 +57,17 @@ rb,rb_center,rb_width = get_refine_box(ds,ds.current_redshift,track)
 redshift = ds.current_redshift
 
 box_width = ds.arr(rb_width,'code_length').in_units('kpc')
+
+def add_grid(ax):
+        ax.xaxis.set_major_locator(plt.MultipleLocator(1.0))
+        ax.xaxis.set_minor_locator(plt.MultipleLocator(0.1))
+        ax.yaxis.set_major_locator(plt.MultipleLocator(1.0))
+        ax.yaxis.set_minor_locator(plt.MultipleLocator(0.1))
+        ax.grid(which='major', axis='x', linewidth=0.75, linestyle='-', color='0.75')
+        ax.grid(which='minor', axis='x', linewidth=0.25, linestyle='-', color='0.75',alpha=0.2)
+        ax.grid(which='major', axis='y', linewidth=0.75, linestyle='-', color='0.75')
+        ax.grid(which='minor', axis='y', linewidth=0.25, linestyle='-', color='0.75',alpha=0.2)
+        return
 
 def create_emission_frbs():
     dx = np.unique(rb['dx'])[1]
@@ -122,7 +133,7 @@ def create_coldens_frbs():
 
 def create_phys_emis_weight_frbs():
     dx = np.unique(rb['dx'])[1]
-    dxs_list = [0.5,1,5,10]
+    dxs_list = [0.5,1.0,5.0,10.0]
     dxs_list = [ds.quan(q,'kpc').in_units('code_length') for q in dxs_list]
     res_list = np.append(dx,dxs_list)
     res_list = ds.arr(res_list,'code_length')
@@ -669,3 +680,86 @@ def cdf_plot_loop():
     plt.savefig('SB_cdf_RD0016_all_forced.pdf')
     plt.close()
     return
+
+def hden_temp_hist(index,base,RD,line,resolution,redshift):
+    hden_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_hden_Emission_'+line+'_'+resolution+'.cpkl'
+    temp_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_temp_Emission_'+line+'_'+resolution+'.cpkl'
+    emis_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_Emission_'+line+'_'+resolution+'.cpkl'
+
+    hden = cPickle.load(open(hden_file,'rb'))
+    temp = cPickle.load(open(temp_file,'rb'))
+    emis = cPickle.load(open(emis_file,'rb'))
+    emis = emis/(1.+redshift)**4.0
+
+    hden,temp,emis = np.log10(hden.flat),np.log10(temp.flat),np.log10(emis.flat)
+
+    hist, xedges, yedges  = np.histogram2d(hden,temp,range=[[-6,1],[3.5, 6.5]],bins=120)#,emis=coldens)
+
+    xbins = np.digitize(hden,xedges[1:-1])
+    ybins = np.digitize(temp,yedges[1:-1])
+
+    totvals = np.zeros((len(xedges[1:]),len(yedges[1:])))
+    numvals = np.zeros((len(xedges[1:]),len(yedges[1:])))
+    maxvals = np.zeros((len(xedges[1:]),len(yedges[1:])))
+
+    for i in range(len(emis)):
+        totvals[xbins[i],ybins[i]] += 10.**emis[i]
+        numvals[xbins[i],ybins[i]] += 1
+        if 10.**emis[i] > maxvals[xbins[i],ybins[i]]:
+            maxvals[xbins[i],ybins[i]] = 10.**emis[i]
+
+    avgvals = totvals/numvals
+    idx = np.where(totvals == 0)
+    avgvals[idx] = 0
+
+    ## I'm going to want to plot the average values on a plot but the issue is
+    ## that the nans throw off the averages. But there are so many arrays to
+    ## parse between it's easiest just to do it at the end
+    averages = np.zeros(4)
+    idA = np.where(emis > 1.)[0]
+    averages[2],averages[3] = np.average(hden[idA]),np.average(temp[idA])
+
+    id1 = np.argwhere(np.isnan(hden))
+    id2 = np.argwhere(np.isnan(temp))
+
+    hden = np.delete(hden, id1)
+    temp = np.delete(temp, id2)
+    averages[0],averages[1] = np.average(hden),np.average(temp)
+
+
+
+    return hist,avgvals,maxvals,averages
+
+def make_weighted_phase_diagrams(index,base,RD,resolution,redshift):
+    ds = yt.load(fn)
+    #lines = ['CIII_977']
+    for line in lines:
+        hist,avgvals,maxvals,averages = hden_temp_hist(index,base,RD,line,resolution,ds.current_redshift)
+
+        fig,ax = plt.subplots(1,1)
+        im1 = ax.imshow(np.log10(avgvals.T),extent=[-6,1,3.5,6.5],
+                            interpolation='nearest',origin='lower',cmap=mymap,vmin=-5,vmax=3)
+
+        print averages
+        #ax.axhline(y=averages[1],color='#d95f02')
+        #ax.axhline(y=averages[3],color='#d95f02',ls='--')
+        #ax.axvline(x=averages[0],color='#d95f02')
+        #x.axvline(x=averages[2],color='#d95f02',ls='--')
+
+        add_grid(ax)
+        ax.set_xlim(-6,1.5)
+        ax.set_ylim(3.5,6.5)
+        ax.set_xlabel('log(Hydrogen Number Density) [cm^-3]')
+        ax.set_ylabel('log(Temperature) [K]')
+        x0,x1 = ax.get_xlim()
+        y0,y1 = ax.get_ylim()
+        ax.set_aspect((x1-x0)/(y1-y0))
+        plt.colorbar(im1)
+        print 'phase'+base+RD+'_weighted_Emission_'+line+'_'+resolution+'.pdf'
+        plt.savefig('phase'+base+RD+'_weighted_Emission_'+line+'_'+resolution+'.pdf')
+        plt.close()
+    return
+
+#create_phys_emis_weight_frbs()
+make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
+#make_weighted_phase_diagrams('x','_nref11_','RD0016','forcedres',ds.current_redshift)
