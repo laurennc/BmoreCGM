@@ -3,14 +3,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 from astropy.table import Table
 import cPickle
-from emission_functions import *
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import matplotlib as mpl
-from astropy.cosmology import WMAP9 as cosmo
 import trident
 import seaborn as sns
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
+import matplotlib.gridspec as gridspec
+
+from matplotlib.colorbar import Colorbar
+from emission_functions import *
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from astropy.cosmology import WMAP9 as cosmo
 
 import holoviews as hv
 import pandas as pd
@@ -19,9 +22,9 @@ from holoviews.operation.datashader import datashade, aggregate
 from holoviews import Store
 hv.extension('matplotlib')
 
-#base = "/Users/dalek/data/Molly/natural/nref11"
-base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
-fn = base+"/RD0020/RD0020"
+base = "/Users/dalek/data/Molly/natural/nref11"
+#base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+fn = base+"/RD0016/RD0016"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 track_name = base+"/halo_track"
 args = fn.split('/')
@@ -730,36 +733,107 @@ def hden_temp_hist(index,base,RD,line,resolution,redshift):
 
     return hist,avgvals,maxvals,averages
 
+def add_phase_histograms(ax,field,index,base,RD,resolution,redshift,line):
+    hden_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_hden_Emission_'+line+'_'+resolution+'.cpkl'
+    temp_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_temp_Emission_'+line+'_'+resolution+'.cpkl'
+    emis_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_Emission_'+line+'_'+resolution+'.cpkl'
+
+    hden = cPickle.load(open(hden_file,'rb'))
+    temp = cPickle.load(open(temp_file,'rb'))
+    emis = cPickle.load(open(emis_file,'rb'))
+    emis = emis/(1.+redshift)**4.0
+
+    hden,temp,emis = np.log10(hden.flat),np.log10(temp.flat),np.log10(emis.flat)
+
+    id1 = np.argwhere(np.isnan(hden))
+    id2 = np.argwhere(np.isnan(temp))
+    hden = np.delete(hden, id1)
+    temp = np.delete(temp, id2)
+    emis = np.delete(emis, id1)
+
+    idN = np.where(emis < 1.)[0]
+    idP = np.where((emis >= 1.) & (emis < 2.))[0]
+    idB = np.where((emis >= 2.) & (emis < 3.))[0]
+    idG = np.where((emis >= 3.))[0]
+
+    if field == 'temp':
+        bins = np.arange(3.5,6.5,0.1)
+        ax.hist(temp[idN],bins=bins, orientation='horizontal', color='k', edgecolor='w',alpha=0.5,normed=True)
+        ax.hist(temp[idP],bins=bins, orientation='horizontal', color='DeepPink', edgecolor='w',alpha=0.5,normed=True)
+        ax.hist(temp[idB],bins=bins, orientation='horizontal', color='DarkTurquoise', edgecolor='w',alpha=0.5,normed=True)
+        ax.hist(temp[idG],bins=bins, orientation='horizontal', color='#50A638', edgecolor='w',alpha=0.5,normed=True)
+
+        ax.set_yticks(np.linspace(3.5,6.5,7))
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_ylim([3.5,6.5])
+        ax.set_axis_off()
+
+    elif field == 'hden':
+        bins = np.linspace(-6,1,50)
+        ax.hist(hden[idN],bins=bins, orientation='vertical', color='k', edgecolor='w',alpha=0.5,normed=True)
+        ax.hist(hden[idP],bins=bins, orientation='vertical', color='DeepPink', edgecolor='w',alpha=0.5,normed=True)
+        ax.hist(hden[idB],bins=bins, orientation='vertical', color='DarkTurquoise', edgecolor='w',alpha=0.5,normed=True)
+        ax.hist(hden[idG],bins=bins, orientation='vertical', color='#50A638', edgecolor='w',alpha=0.5,normed=True)
+
+        ax.set_xticks([]) # Ensures we have the same ticks as the scatter plot !
+        ax.set_yticklabels([])
+        ax.set_xlim([-6,1])
+        ax.set_axis_off()
+
+    else:
+        print 'NEED TO GIVE AN APPROPRIATE FIELD'
+
+    return
+
 def make_weighted_phase_diagrams(index,base,RD,resolution,redshift):
     ds = yt.load(fn)
     #lines = ['CIII_977']
     for line in lines:
         hist,avgvals,maxvals,averages = hden_temp_hist(index,base,RD,line,resolution,ds.current_redshift)
 
-        fig,ax = plt.subplots(1,1)
-        im1 = ax.imshow(np.log10(avgvals.T),extent=[-6,1,3.5,6.5],
-                            interpolation='nearest',origin='lower',cmap=mymap,vmin=-5,vmax=3)
+        fig = plt.figure(1, figsize=(9,8))
+        gs = gridspec.GridSpec(3,3, height_ratios=[0.2,1,0.05], width_ratios=[1,0.2,0.2])
+        gs.update(left=0.075, right=0.93, bottom=0.09, top=0.95, wspace=0.00, hspace=0.00)
 
-        print averages
-        #ax.axhline(y=averages[1],color='#d95f02')
-        #ax.axhline(y=averages[3],color='#d95f02',ls='--')
-        #ax.axvline(x=averages[0],color='#d95f02')
-        #x.axvline(x=averages[2],color='#d95f02',ls='--')
+        # --------------------------------------------------------
+        ax1 = plt.subplot(gs[1,0])
+        # --------------------------------------------------------
+        plt1 = ax1.imshow(np.log10(avgvals.T),extent=[-6,1,3.5,6.5],
+                          interpolation='nearest',origin='lower',cmap=mymap,vmin=-5,vmax=3)
 
-        add_grid(ax)
-        ax.set_xlim(-6,1.5)
-        ax.set_ylim(3.5,6.5)
-        ax.set_xlabel('log(Hydrogen Number Density) [cm^-3]')
-        ax.set_ylabel('log(Temperature) [K]')
-        x0,x1 = ax.get_xlim()
-        y0,y1 = ax.get_ylim()
-        ax.set_aspect((x1-x0)/(y1-y0))
-        plt.colorbar(im1)
-        print 'phase'+base+RD+'_weighted_Emission_'+line+'_'+resolution+'.pdf'
+        add_grid(ax1)
+        ax1.set_xlim([-6,1])
+        ax1.set_ylim([3.5,6.5])
+        ax1.set_xlabel(r' ') # Force this empty !
+        ax1.set_xticks(np.linspace(-6,1,8)) # Force this for consistency with hists!
+        ax1.set_xticklabels(np.linspace(-6,1,8))
+        ax1.set_ylabel(r'Temperature [log(K)]')
+        ax1.set_xlabel(r'Hydrogen Number Density [log(cm^{-3})]')
+        x0,x1 = ax1.get_xlim()
+        y0,y1 = ax1.get_ylim()
+        ax1.set_aspect((x1-x0)/(y1-y0))
+
+        # --------------------------------------------------------
+        #cbax = plt.subplot(gs[2,0]) # Place it where it should be.
+        # --------------------------------------------------------
+        #cb = Colorbar(ax = cbax, mappable = plt1, orientation = 'horizontal', ticklocation = 'bottom')
+        #cb.set_label(r'Colorbar !', labelpad=5)
+
+        # --------------------------------------------------------
+        ax1v = plt.subplot(gs[1,1])
+        # --------------------------------------------------------
+        add_phase_histograms(ax1v,'temp',index,base,RD,resolution,redshift,line)
+
+        # --------------------------------------------------------
+        ax1h = plt.subplot(gs[0,0])
+        # --------------------------------------------------------
+        add_phase_histograms(ax1h,'hden',index,base,RD,resolution,redshift,line)
+
         plt.savefig('phase'+base+RD+'_weighted_Emission_'+line+'_'+resolution+'.pdf')
         plt.close()
     return
 
 #create_phys_emis_weight_frbs()
-make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
-#make_weighted_phase_diagrams('x','_nref11_','RD0016','forcedres',ds.current_redshift)
+#make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
+make_weighted_phase_diagrams('x','_nref11_','RD0016','forcedres',ds.current_redshift)
