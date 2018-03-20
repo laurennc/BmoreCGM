@@ -9,8 +9,8 @@ from astropy.cosmology import WMAP9 as cosmo
 #sns.set_style("whitegrid", {'axes.grid' : False})
 
 base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
-fn = base+"/RD0016/RD0016"
-track_name = base+"/halo_track"
+fn = base+"/RD0027/RD0027"
+track_name = base+"/halo_track_z2_z1"
 args = fn.split('/')
 lines = ['LyAlpha','CIII_977','OVI']
 
@@ -32,7 +32,7 @@ def create_emission_frbs():
     rb,rb_center,rb_width = get_refine_box(ds,ds.current_redshift,track)
     lines = ['LyAlpha','CIII_977','OVI']
 
-    ang_res = 0.1 ## arcsecond
+    ang_res = 1.0 ## arcsecond
     dx = (ang_res / cosmo.arcsec_per_kpc_proper(ds.current_redshift)).value
     dx = ds.arr(dx,'kpc').in_units('code_length')
 
@@ -44,7 +44,7 @@ def create_emission_frbs():
                 fileout = args[-3]+'_'+args[-2]+'_'+field+'_'+index+'_luvoir'
                 obj = ds.proj(('gas',field),index,data_source=rb)
                 frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
-                fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_luvoir.cpkl'
+                fileout = 'luvoir/frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_1arcsec_luvoir.cpkl'
                 cPickle.dump(frb[('gas',field)],open(fileout,'wb'),protocol=-1)
     return
 
@@ -55,7 +55,7 @@ def create_phys_emis_weight_frbs():
     rb,rb_center,rb_width = get_refine_box(ds,ds.current_redshift,track)
     lines = ['CIII_977','LyAlpha','OVI']
 
-    ang_res = 0.1 ## arcsecond
+    ang_res = 1 ## arcsecond
     dx = (ang_res / cosmo.arcsec_per_kpc_proper(ds.current_redshift)).value
     dx = ds.arr(dx,'kpc').in_units('code_length')
 
@@ -68,12 +68,12 @@ def create_phys_emis_weight_frbs():
             num_cells = np.ceil(rb_width/dx)
             obj = ds.proj('H_nuclei_density',index,data_source=rb,weight_field=field)
             frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
-            fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_luvoir.cpkl'
+            fileout = 'luvoir/frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_1arcsec_luvoir.cpkl'
             cPickle.dump(frb['H_nuclei_density'],open(fileout,'wb'),protocol=-1)
 
             obj = ds.proj('temperature',index,data_source=rb,weight_field=field)
             frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
-            fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_luvoir.cpkl'
+            fileout = 'luvoir/frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_1arcsec_luvoir.cpkl'
             cPickle.dump(frb['temperature'],open(fileout,'wb'),protocol=-1)
 
     return
@@ -84,7 +84,7 @@ def make_luvoir_plot(RD,SBlim):
     ds = yt.load(fn)
     for line in lines:
         field = 'Emission_'+line
-        filein = 'frbs/frbx_nref11n_nref10f_refine200kpc_z4to2_'+RD+'_'+field+'_luvoir.cpkl'
+        filein = 'luvoir/frbs/frbx_nref11n_nref10f_refine200kpc_z4to2_'+RD+'_'+field+'_1arcsec_luvoir.cpkl'
         frb = cPickle.load(open(filein,'rb'))
         frb = np.log10(frb/(1.+ds.current_redshift)**4)
 
@@ -94,15 +94,15 @@ def make_luvoir_plot(RD,SBlim):
         plt.imshow(test,cmap='GnBu',vmin=1,vmax=3)
         plt.colorbar()
 
-        plt.savefig('z3_x_'+field+'_luvoir.pdf')
+        plt.savefig('z1_x_'+field+'_1arcsec_luvoir.pdf')
         plt.close()
     return
 
 
 def hden_temp_hist(RD,line,redshift):
-    hden_file = '/Users/dalek/repos/BmoreCGM/frbs/frbx_nref11n_nref10f_refine200kpc_z4to2_'+RD+'_hden_Emission_'+line+'_luvoir.cpkl'
-    temp_file = '/Users/dalek/repos/BmoreCGM/frbs/frbx_nref11n_nref10f_refine200kpc_z4to2_'+RD+'_temp_Emission_'+line+'_luvoir.cpkl'
-    emis_file = '/Users/dalek/repos/BmoreCGM/frbs/frbx_nref11n_nref10f_refine200kpc_z4to2_'+RD+'_Emission_'+line+'_luvoir.cpkl'
+    hden_file = '/Users/dalek/repos/BmoreCGM/luvoir/frbs/frbx_nref11n_nref10f_refine200kpc_z4to2_'+RD+'_hden_Emission_'+line+'_1arcsec_luvoir.cpkl'
+    temp_file = '/Users/dalek/repos/BmoreCGM/luvoir/frbs/frbx_nref11n_nref10f_refine200kpc_z4to2_'+RD+'_temp_Emission_'+line+'_1arcsec_luvoir.cpkl'
+    emis_file = '/Users/dalek/repos/BmoreCGM/luvoir/frbs/frbx_nref11n_nref10f_refine200kpc_z4to2_'+RD+'_Emission_'+line+'_1arcsec_luvoir.cpkl'
 
     hden = cPickle.load(open(hden_file,'rb'))
     temp = cPickle.load(open(temp_file,'rb'))
@@ -149,7 +149,7 @@ def make_weighted_phase_diagrams(RD):
         y0,y1 = ax.get_ylim()
         ax.set_aspect((x1-x0)/(y1-y0))
         plt.colorbar(im1)
-        plt.savefig('z3_x_phase_weighted_Emission_'+line+'_luvoir.pdf')
+        plt.savefig('z1_x_phase_weighted_Emission_'+line+'_1arcsec_luvoir.pdf')
         plt.close()
 
         fig,ax = plt.subplots(1,1)
@@ -174,7 +174,7 @@ def make_weighted_phase_diagrams(RD):
         y0,y1 = ax.get_ylim()
         ax.set_aspect((x1-x0)/(y1-y0))
         plt.colorbar(im2b)
-        plt.savefig('z3_x_phase_weighted_Emission_'+line+'_avgEmis_luvoir.pdf')
+        plt.savefig('z1_x_phase_weighted_Emission_'+line+'_avgEmis_1arcsec_luvoir.pdf')
         plt.close()
 
         fig,ax = plt.subplots(1,1)
@@ -190,12 +190,12 @@ def make_weighted_phase_diagrams(RD):
         y0,y1 = ax.get_ylim()
         ax.set_aspect((x1-x0)/(y1-y0))
         plt.colorbar(im3)
-        plt.savefig('z3_x_phase_weighted_Emission_'+line+'_maxEmis_luvoir.pdf')
+        plt.savefig('z1_x_phase_weighted_Emission_'+line+'_maxEmis_1arcsec_luvoir.pdf')
         plt.close()
 
     return
 
 #create_emission_frbs()
 #create_phys_emis_weight_frbs()
-#make_luvoir_plot('RD0016',1.)
-make_weighted_phase_diagrams('RD0016')
+#make_luvoir_plot('RD0027',1.)
+make_weighted_phase_diagrams('RD0027')

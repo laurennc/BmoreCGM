@@ -834,6 +834,5 @@ def make_weighted_phase_diagrams(index,base,RD,resolution,redshift):
         plt.close()
     return
 
-#create_phys_emis_weight_frbs()
 #make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
 make_weighted_phase_diagrams('x','_nref11_','RD0016','forcedres',ds.current_redshift)
