@@ -5,7 +5,7 @@ from astropy.table import Table
 import cPickle
 import matplotlib as mpl
 import trident
-import seaborn as sns
+#import seaborn as sns
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
@@ -40,6 +40,15 @@ detect_limits = {'nope':(-10,1),
                  'poss':(1,2),
                  'prob':(2,3),
                  'defi':(3,10)}
+
+line_energies = {'CIII_977':4.*np.pi*2.03e-11,
+                 'CIV':4.*np.pi*1.28e-11,
+                 'OVI':4.*np.pi*1.92e-11,
+                 'SiIV':4.*np.pi*1.42e-11,
+                 'HAlpha':4.*np.pi*3.03e-12,
+                 'LyAlpha':4.*np.pi*1.63e-11}
+
+units_key = {'cell_mass':'Msun','Density':'g/cm**3','cell_volume':'kpc**3'}
 
 fontcs ={'fontname':'Helvetica','fontsize':16}
 #mpl.rc('text', usetex=True)
@@ -544,6 +553,27 @@ def holoviews_radial_profiles(weight_by=None):
     renderer.save(dist_plots, fileout)
     return
 
+def holoviews_general_plot(xfield,yfield,ranges,fout,cmap,weight_by=None):
+    xx = np.log10(rb[xfield])
+    yy = np.log10(rb[yfield])
+
+    if weight_by != None:
+        weight = rb[weight_by]
+
+    df = pd.DataFrame({xfield:xx, yfield:yy, weight_by:weight)
+
+    if weight_by == None:
+        scatterplot = hv.Scatter(df,kdims=[xfield],vdims=[yfield])
+        full_plot = (datashade(scatterplot),cmap=cm.Plasma,dynamic=False,x_range=(ranges[0],ranges[1]),
+                     y_range=(ranges[2],ranges[3])).opts(plot=dict(aspect='square'))
+    else:
+        full_plot = aggregate(hv.Scatter(df,[xfield,yfield])),y_range=(ranges[2],ranges[3]),aggregator=dshade.sum(weight_by)
+        full_plot = full_plot.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cmap))
+
+    renderer = Store.renderers['matplotlib'].instance(fig='pdf', holomap='gif')
+    renderer.save(full_plot, fout)
+    return
+
 def covering_fraction_by_radius(rb_width,SB_cutoff=1.):
     natural_base = '_nref11_RD0016_'
     refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0016_'
@@ -834,5 +864,17 @@ def make_weighted_phase_diagrams(index,base,RD,resolution,redshift):
         plt.close()
     return
 
+def make_observer_maps(index,base,RD,resolution,redshift,field,int_time):
+    filein = 'frbs/frb'+index+'_'+refined_base+'_'+RD+'_Emission_'+field+'_'+resolution+'.cpkl'
+    frb = cPickle.load(open(filein,'rb'))
+    emis = frb/(1+redshift)
+    emis = emis*line_energies[field]
+
+
+
+    return
+
+make_observer_maps()
+
 #make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
-make_weighted_phase_diagrams('x','_nref11_','RD0016','forcedres',ds.current_redshift)
+#make_weighted_phase_diagrams('x','_nref11_','RD0016','forcedres',ds.current_redshift)
