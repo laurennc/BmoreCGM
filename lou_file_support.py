@@ -17,5 +17,6 @@ def prepare_shiftc_file(start,stop,ref=True):
     fout.close()
     return
 
+prepare_shiftc_file(400,500,ref=False)
 
 #shiftc --extract-tar DD0354.tar

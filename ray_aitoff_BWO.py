@@ -17,19 +17,20 @@ comm = MPI.COMM_WORLD
 t_start = time.time()
 
 # number of pixels per dimension (for Aitoff projection)
-pixels_per_dim = 16
+pixels_per_dim = 16 #64 
 
 remove_first_N_kpc = 1.0
 
 # Load dataset
-fn = '../DD0600/DD0600'
+#fn = '/Users/dalek/data/Molly/natural/nref11/RD0020/RD0020'
+fn = '/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2/RD0020/RD0020'
 ds = yt.load(fn)
 
 # Add H I & O VI ion fields using Trident
 trident.add_ion_fields(ds, ions=['O VI', 'H I'], ftype="gas")
 
 # Specify position where the ray starts (position in the volume)
-c = ds.arr([0.5, 0.5, 0.5], 'unitary')
+c = ds.arr([0.494032, 0.488924, 0.502169], 'code_length')
 c = c.in_units('kpc')
 
 # location in the disk where we're setting our observations
@@ -37,7 +38,9 @@ X = YTArray([8., 0., 0.], 'kpc')
 ray_start = c - X
 
 # Length of Ray
-R = 200.0
+# Total box size is 95.92 kpc at this redshift
+# Start with 50 to be most in the refine region
+R = 50.0
 
 # do you want projections of the spheres?  True/False
 MakeProjections = True
@@ -110,9 +113,9 @@ x, y = np.mgrid[slice(-np.pi+Dx/2, np.pi+Dx/2, Dx),
 
 original_shape = x.shape
 
-if Debug:
-    print("Dx, Dy: ", Dx, Dy)
-    print("shape is: ", original_shape)
+#if Debug:
+    #print("Dx, Dy: ", Dx, Dy)
+    #print("shape is: ", original_shape)
 
 x = np.reshape(x,-1)
 y = np.reshape(y,-1)
@@ -294,9 +297,9 @@ O_VI = np.reshape(reduce_OVI,original_shape)
 vel_los = np.reshape(reduce_vlos,original_shape)
 
 if Debug:
-
-    print("Ray generation took {:.3f} seconds on MPI task {:d}".format(raygen_end-raygen_start))
-    print("That's {:.3e} seconds per ray on this MPI task".format( (raygen_end-raygen_start)/(end_index-start_index)))
+    print 'in debug'
+    #print("Ray generation took {:.3f} seconds on MPI task {:d}".format(raygen_end-raygen_start))
+    #print("That's {:.3e} seconds per ray on this MPI task".format( (raygen_end-raygen_start)/(end_index-start_index)))
 
 
 if comm.rank == 0:
@@ -402,5 +405,6 @@ comm.Barrier()
 t_end = time.time()
 
 if comm.rank == 0:
-    print("This calculation took {:.3f} seconds".format(t_end-t_start))
-    print("That's {:.3e} seconds per ray per MPI task".format( (t_end-t_start)*comm.size/reduce_HI.size))
+    print 'woo'
+    #print("This calculation took {:.3f} seconds".format(t_end-t_start))
+    #print("That's {:.3e} seconds per ray per MPI task".format( (t_end-t_start)*comm.size/reduce_HI.size))
