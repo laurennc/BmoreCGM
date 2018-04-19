@@ -54,13 +54,13 @@ def get_refine_box(ds, zsnap, track):
 #base = "/lou/s2m/mpeeples/halo_008508/nref11n/nref11f_refine200kpc_z4to2"
 #base = "/lou/s2m/mpeeples/halo_008508/nref11n/nref11n_nref10f_refine200kpc_z4to2"
 base = "nref11n/natural/"
-fn = base+"/RD0017/RD0017"
+#fn = base+"/RD0017/RD0017"
 track_name = "/lou/s2m/lcorlies/halo_track"
 args = fn.split('/')
 
 fn= 'RD0042/RD0042'
-fn = 'DD0018/DD0018'
-track_name = 'halo_track'
+fn = 'DD0020/DD0020'
+#track_name = 'halo_track'
 ds = yt.load(fn)
 ds.add_particle_filter('stars')
 ds.add_particle_filter('stars_low')
@@ -75,8 +75,8 @@ proj = yt.ProjectionPlot(ds,'z','H_number_density',center=rb_center,width=(float
 proj.set_cmap('H_number_density',h1_color_map)
 proj.set_zlim('H_number_density',h1_proj_min,h1_proj_max)
 proj.annotate_particles((500,'kpc'),col='MediumSeaGreen',ptype='stars',alpha=0.4)
-proj.annotate_particles((500,'kpc'),col='HotPink',ptype='stars_low')
-proj.save('nref11n_startest_DD0018_HI_w_stars2')
+proj.annotate_particles((500,'kpc'),col='#33F3FF',ptype='stars_low')
+proj.save('nref11n_DD0020_HI_w_stars2')
 
 
 proj = yt.ProjectionPlot(ds,'y','dark_matter_density',center=rb_center,width=(float(box_width.value),'kpc'))
