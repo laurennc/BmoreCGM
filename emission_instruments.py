@@ -78,6 +78,6 @@ class EmissionMap:
     def plot_LLAMAS_frb(self,frb,fileout):
         return
 
-def convert_photons_to_ergs(line):
-  cquan = self.ds.quan(1.,'steradian**-1')
-  return cquan*line_energy[line]
+def emission_line_energy(wavelength,unit):
+    E = h*c/(wavelength*unit)
+    return E.to('erg')
