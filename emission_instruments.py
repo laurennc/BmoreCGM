@@ -16,12 +16,22 @@ import yt.units as u
 ### THROUGH THE REFINE BOX AND NOTHING ELSE
 ### NOT SURE IF THAT'S REALLY WHAT I ALWAYS WANT TO BE DOING
 
-KCWI = {'ang_res':??,'FOV':??,'bandpass':(??,??),'SBlim':??}
-MUSE = {'wide'  :{'ang_res':0.2*u.arcsecond,'FOV':(1.*u.arcminute,1.*u.arcminute),
-                  'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':0.0},
-        'narrow':{'ang_res':0.025*u.arcsecond,'FOV':(7.5*u.arcsecond,7.5*u.arcsecond),
-                  'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':0.0}
+## Getting these SB numbers from https://arxiv.org/pdf/1803.10781.pdf
+## Can confirm with the LU quoted in the KCWI document
+KCWI = {'binned2x2' :{'ang_res':1.*u.arcsecond,'FOV':(33*u.arcsecond,20.4*u.arcsecond),
+                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':'SBlim':1e-18*u.erg/(u.s*u.angstrom*u.cm**2)},
+        'full_slice':{'ang_res':0.5*u.arcsecond,'FOV':(33*u.arcsecond,20.4*u.arcsecond),
+                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':'SBlim':1e-18*u.erg/(u.s*u.angstrom*u.cm**2)}
         }
+## Getting these SB numbers from https://arxiv.org/pdf/1509.05143.pdf
+## where they have 27 hours of exposure so they go much deeper than
+## the one hour exposure quoted on the MUSE spec website
+MUSE = {'wide'  :{'ang_res':0.2*u.arcsecond,'FOV':(1.*u.arcminute,1.*u.arcminute),
+                  'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':1e-19*u.erg/(u.s*u.angstrom*u.cm**2)},
+        'narrow':{'ang_res':0.025*u.arcsecond,'FOV':(7.5*u.arcsecond,7.5*u.arcsecond),
+                  'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':1e-19*u.erg/(u.s*u.angstrom*u.cm**2)}
+        }
+## ###
 LLAMAS = {'ang_res':??,'FOV':??,'bandpass':(??,??),'SBlim':??}
 
 line_energies = {'CIII_977':2.03e-11,'CIV':1.28e-11,
