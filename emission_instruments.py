@@ -17,8 +17,8 @@ import yt.units as u
 ### NOT SURE IF THAT'S REALLY WHAT I ALWAYS WANT TO BE DOING
 
 KCWI = {'ang_res':??,'FOV':??,'bandpass':(??,??),'SBlim':??}
-MUSE = {'wide':{'ang_res':0.2*u.arcsecond,'FOV':(1.*u.arcminute,1.*u.arcminute),
-                'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':0.0},
+MUSE = {'wide'  :{'ang_res':0.2*u.arcsecond,'FOV':(1.*u.arcminute,1.*u.arcminute),
+                  'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':0.0},
         'narrow':{'ang_res':0.025*u.arcsecond,'FOV':(7.5*u.arcsecond,7.5*u.arcsecond),
                   'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':0.0}
         }
