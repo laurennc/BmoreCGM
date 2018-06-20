@@ -19,24 +19,27 @@ import yt.units as u
 ## SB numbers from https://arxiv.org/pdf/1803.10781.pdf = 1e-18
 ## Can confirm with the LU quoted in the KCWI document
 ## but that gives 6e-19 (6e3 LU), and 7e-21 (70 LU) respectively
-## LU = 1e5 ph cm^-2 s^01 sr^-1 = 10^-17 erg cm^-2 s^-1 sr^-1 for LyA
+## LU = 1e5 ph cm^-2 s^01 sr^-1 = 10^-17 erg cm^-2 s^-1 arcsec^-2 for LyA
 ## My guess is that the integration times are different so let's go with
 ## the lower SB limits for now
 KCWI = {'binned2x2' :{'ang_res':1.*u.arcsecond,'FOV':(33*u.arcsecond,20.4*u.arcsecond),
-                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':6e-19*u.erg/(u.s*u.steradian*.cm**2)},
+                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':6e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2)},
         'full_slice':{'ang_res':0.5*u.arcsecond,'FOV':(33*u.arcsecond,20.4*u.arcsecond),
-                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':7e-21*u.erg/(u.s*u.steradian*u.cm**2)}
+                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':7e-21*u.erg/(u.s*u.arcsecond**2*u.cm**2)}
         }
 ## Getting these SB numbers from https://arxiv.org/pdf/1509.05143.pdf
 ## where they have 27 hours of exposure so they go much deeper than
 ## the one hour exposure quoted on the MUSE spec website
 MUSE = {'wide'  :{'ang_res':0.2*u.arcsecond,'FOV':(1.*u.arcminute,1.*u.arcminute),
-                  'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':1e-19*u.erg/(u.s*u.angstrom*u.cm**2)},
+                  'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':1e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2)},
         'narrow':{'ang_res':0.025*u.arcsecond,'FOV':(7.5*u.arcsecond,7.5*u.arcsecond),
-                  'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':1e-19*u.erg/(u.s*u.angstrom*u.cm**2)}
+                  'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':1e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2)}
         }
-## ###
-LLAMAS = {'ang_res':??,'FOV':??,'bandpass':(??,??),'SBlim':??}
+## Specs from http://www.mit.edu/people/rsimcoe/Llamas_pocketguide_rA.pdf
+## There's nothing quoted about the SB but let's assume that they're going
+## to do as well as MUSE or KCWI or it wouldn't get funded
+LLAMAS = {'ang_res':0.75*u.arcsecond,'FOV':(1.*u.arcminute,1.*u.arcminute),
+          'bandpass':(3600.*u.angstrom,9700.*u.angstrom)),'SBlim':1e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2)}
 
 line_energies = {'CIII_977':2.03e-11,'CIV':1.28e-11,
                  'OVI':1.92e-11,'SiIV':1.42e-11,
