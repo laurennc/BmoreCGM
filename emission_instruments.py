@@ -16,12 +16,16 @@ import yt.units as u
 ### THROUGH THE REFINE BOX AND NOTHING ELSE
 ### NOT SURE IF THAT'S REALLY WHAT I ALWAYS WANT TO BE DOING
 
-## Getting these SB numbers from https://arxiv.org/pdf/1803.10781.pdf
+## SB numbers from https://arxiv.org/pdf/1803.10781.pdf = 1e-18
 ## Can confirm with the LU quoted in the KCWI document
+## but that gives 6e-19 (6e3 LU), and 7e-21 (70 LU) respectively
+## LU = 1e5 ph cm^-2 s^01 sr^-1 = 10^-17 erg cm^-2 s^-1 sr^-1 for LyA
+## My guess is that the integration times are different so let's go with
+## the lower SB limits for now
 KCWI = {'binned2x2' :{'ang_res':1.*u.arcsecond,'FOV':(33*u.arcsecond,20.4*u.arcsecond),
-                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':'SBlim':1e-18*u.erg/(u.s*u.angstrom*u.cm**2)},
+                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':6e-19*u.erg/(u.s*u.steradian*.cm**2)},
         'full_slice':{'ang_res':0.5*u.arcsecond,'FOV':(33*u.arcsecond,20.4*u.arcsecond),
-                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':'SBlim':1e-18*u.erg/(u.s*u.angstrom*u.cm**2)}
+                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':7e-21*u.erg/(u.s*u.steradian*u.cm**2)}
         }
 ## Getting these SB numbers from https://arxiv.org/pdf/1509.05143.pdf
 ## where they have 27 hours of exposure so they go much deeper than
