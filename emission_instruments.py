@@ -22,25 +22,30 @@ import yt.units as u
 ## LU = 1e5 ph cm^-2 s^01 sr^-1 = 10^-17 erg cm^-2 s^-1 arcsec^-2 for LyA
 ## My guess is that the integration times are different so let's go with
 ## the lower SB limits for now
-KCWI = {'binned2x2' :{'ang_res':1.*u.arcsecond,'FOV':(33*u.arcsecond,20.4*u.arcsecond),'fig_size':(2.2,1.36),
-                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':6e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2)},
-        'full_slice':{'ang_res':0.5*u.arcsecond,'FOV':(33*u.arcsecond,20.4*u.arcsecond),'fig_size':(2.2,1.36),
-                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':7e-21*u.erg/(u.s*u.arcsecond**2*u.cm**2)}
+KCWI = {'binned2x2' :{'ang_res':1.*u.arcsecond,'FOV':(33*u.arcsecond,20.4*u.arcsecond),
+                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':6e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2),
+                      'fig_size':(2.2,1.36),'cmap':'GnBu_r'},
+        'full_slice':{'ang_res':0.5*u.arcsecond,'FOV':(33*u.arcsecond,20.4*u.arcsecond),
+                      'bandpass':(3500.*u.angstrom,5600.*u.angstrom),'SBlim':7e-21*u.erg/(u.s*u.arcsecond**2*u.cm**2),
+                      'fig_size':(2.2,1.36),'cmap':'GnBu_r'}
         }
 ## Getting these SB numbers from https://arxiv.org/pdf/1509.05143.pdf
 ## where they have 27 hours of exposure so they go much deeper than
 ## the one hour exposure quoted on the MUSE spec website
-MUSE = {'wide'  :{'ang_res':0.2*u.arcsecond,'FOV':(1.*u.arcminute,1.*u.arcminute),'fig_size':(4,4),
-                  'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':1e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2)},
-        'narrow':{'ang_res':0.025*u.arcsecond,'FOV':(7.5*u.arcsecond,7.5*u.arcsecond),'fig_size':(0.5,0.5),
-                  'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':1e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2)}
+MUSE = {'wide'  :{'ang_res':0.2*u.arcsecond,'FOV':(1.*u.arcminute,1.*u.arcminute),
+                  'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':1e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2),
+                  'fig_size':(4,4),'cmap':'???'},
+        'narrow':{'ang_res':0.025*u.arcsecond,'FOV':(7.5*u.arcsecond,7.5*u.arcsecond),
+                  'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':1e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2),
+                  'fig_size':(0.5,0.5),'cmap':'??'}
         }
 ## Specs from http://www.mit.edu/people/rsimcoe/Llamas_pocketguide_rA.pdf
 ## There's nothing quoted about the SB but let's assume that they're going
 ## to do as well as MUSE or KCWI or it wouldn't get funded
-LLAMAS = {'normal' :{'ang_res':0.75*u.arcsecond,'FOV':(1.*u.arcminute,1.*u.arcminute),'fig_size':(4,4),
-          'bandpass':(3600.*u.angstrom,9700.*u.angstrom)),'SBlim':1e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2)}
-          }
+LLAMAS = {'normal' :{'ang_res':0.75*u.arcsecond,'FOV':(1.*u.arcminute,1.*u.arcminute),
+          'bandpass':(3600.*u.angstrom,9700.*u.angstrom)),'SBlim':1e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2),
+          'fig_size':(4,4),'cmap':'??'}
+         }
 
 line_energies = {'CIII_977':2.03e-11*u.erg,'CIV':1.28e-11*u.erg,
                  'OVI':1.92e-11*u.erg,'SiIV':1.42e-11*u.erg,
@@ -94,33 +99,35 @@ class EmissionMap:
       return frb
 
 
-    def plot_frb(self,line,frb,fileout):
-        if check_line_in_bandpass(line):
-            ## NEED TO SET PLOT SIZE SO THAT IT'S CONSISTENT
-            ## BETWEEN ALL OF THE INSTRUMENTS
-            plt.figure(figsize=self.instrument[self.mode]['fig_size'])
-            frb = cPickle.load(open(frb,'rb'))
+def plot_frb(self,line,frb,fileout):
+    if check_line_in_bandpass(line):
+        ## NEED TO SET PLOT SIZE SO THAT IT'S CONSISTENT
+        ## BETWEEN ALL OF THE INSTRUMENTS
+        plt.figure(figsize=self.instrument[self.mode]['fig_size'])
+        frb = cPickle.load(open(frb,'rb'))
 
             ## Convert to the units most observers use
-            lenergy = line_energies[line]
-            frb = frb.to(1./((u.s*u.arcsecond**2*u.cm**2)))*lenergy
-            frb = np.log10(frbNAT/(1.+self.redshift)**4)
+        lenergy = line_energies[line]
+        frb = frb.to(1./((u.s*u.arcsecond**2*u.cm**2)))*lenergy
+        frb = np.log10(frbNAT/(1.+self.redshift)**4)
 
-            FOVconvert = cosmo.kpc_proper_per_arcmin(self.redshift).value*u.kpc/u.arcmin
-            FOV = (self.instrument[self.mode]['FOV']*FOVconvert).to('kpc')
-            bd1,bd2 = -1*FOV[0]/2.,FOV[0]/2.
-            bd3,bd4 = -1*FOV[1]/2./FOV[1]/2.
+        FOVconvert = cosmo.kpc_proper_per_arcmin(self.redshift).value*u.kpc/u.arcmin
+        FOV = (self.instrument[self.mode]['FOV']*FOVconvert).to('kpc')
+        bd1,bd2 = -1*FOV[0]/2.,FOV[0]/2.
+        bd3,bd4 = -1*FOV[1]/2./FOV[1]/2.
 
-            plt.imshow(frb,cmap=cmap,vmin=-24,vmax=-14,extent=(bd1,bd2,bd3,bd4),
-                       origin='lower',interpolation=None)
-            plt.colorbar()
-            plt.savefig(fileout)
-            plt.close()
-        else:
-            PLOT A BLANK SQUARE
-        return
+        ## only want to plot in color the lines that
+        sb_lim = np.log10(self.instrument[self.mode][])
+        obs = np.ma.masked_where((frb > ))
 
-        return
+        plt.imshow(frb,cmap=cmap,vmin=-24,vmax=-14,extent=(bd1,bd2,bd3,bd4),
+                   origin='lower',interpolation=None)
+        plt.colorbar()
+        plt.savefig(fileout)
+        plt.close()
+    else:
+        PLOT A BLANK SQUARE
+    return
 
     def check_line_in_bandpass(self,line):
         if isinstance(line,str):
