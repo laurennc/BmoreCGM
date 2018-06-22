@@ -122,19 +122,6 @@ class EmissionMap:
 
         return
 
-    def plot_MUSE_frb(self,line,frb,fileout):
-        if check_line_in_bandpass(line):
-            CODE HERE
-        else:
-            PLOT A BLANK SQUARE
-        return
-
-    def plot_KCWI_frb(self,frb,fileout):
-        return
-
-    def plot_LLAMAS_frb(self,frb,fileout):
-        return
-
     def check_line_in_bandpass(self,line):
         if isinstance(line,str):
             line = line_wavelengths[line]
