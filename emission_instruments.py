@@ -34,26 +34,26 @@ KCWI = {'binned2x2' :{'ang_res':1.*u.arcsecond,'FOV':(33*u.arcsecond,20.4*u.arcs
 ## the one hour exposure quoted on the MUSE spec website
 MUSE = {'wide'  :{'ang_res':0.2*u.arcsecond,'FOV':(1.*u.arcminute,1.*u.arcminute),
                   'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':1e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2),
-                  'fig_size':(4,4),'cmap':'???'},
+                  'fig_size':(4,4),'cmap':'RdPu_r'},
         'narrow':{'ang_res':0.025*u.arcsecond,'FOV':(7.5*u.arcsecond,7.5*u.arcsecond),
                   'bandpass':(4650.*u.angstrom,9300.*u.angstrom),'SBlim':1e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2),
-                  'fig_size':(0.5,0.5),'cmap':'??'}
+                  'fig_size':(0.5,0.5),'cmap':'RdPu_r'}
         }
 ## Specs from http://www.mit.edu/people/rsimcoe/Llamas_pocketguide_rA.pdf
 ## There's nothing quoted about the SB but let's assume that they're going
 ## to do as well as MUSE or KCWI or it wouldn't get funded
 LLAMAS = {'normal' :{'ang_res':0.75*u.arcsecond,'FOV':(1.*u.arcminute,1.*u.arcminute),
-          'bandpass':(3600.*u.angstrom,9700.*u.angstrom)),'SBlim':1e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2),
-          'fig_size':(4,4),'cmap':'??'}
+          'bandpass':(3600.*u.angstrom,9700.*u.angstrom),'SBlim':1e-19*u.erg/(u.s*u.arcsecond**2*u.cm**2),
+          'fig_size':(4,4),'cmap':'PuRd_r'}
          }
 
 line_energies = {'CIII_977':2.03e-11*u.erg,'CIV':1.28e-11*u.erg,
                  'OVI':1.92e-11*u.erg,'SiIV':1.42e-11*u.erg,
                  'HAlpha':3.03e-12*u.erg,'LyAlpha':1.63e-11*u.erg}
 
-line_wavelengths = {'CIII_977':977*u.angstrom,'CIV':??*u.angstrom,
-                    'OVI':1032*u.angstrom,'SiIV':??*u.angstrom,
-                    'HAlpha':??*u.angstrom,'LyAlpha':1216*u.angstrom}
+line_wavelengths = {'CIII_977':977*u.angstrom,'CIV':1548*u.angstrom,
+                    'OVI':1032*u.angstrom,'SiIV':1394*u.angstrom,
+                    'HAlpha':6563*u.angstrom,'LyAlpha':1216*u.angstrom}
 
 axis_map = {'x':0,'y':1,'z':2}
 
@@ -99,11 +99,12 @@ class EmissionMap:
       return frb
 
 
-def plot_frb(self,line,frb,fileout):
+  def plot_frb(self,line,frb,fileout):
+    fig = plt.figure(figsize=self.instrument[self.mode]['fig_size'])
+    ax = fig.add_subplot(1,1,1)
     if check_line_in_bandpass(line):
         ## NEED TO SET PLOT SIZE SO THAT IT'S CONSISTENT
         ## BETWEEN ALL OF THE INSTRUMENTS
-        plt.figure(figsize=self.instrument[self.mode]['fig_size'])
         frb = cPickle.load(open(frb,'rb'))
 
             ## Convert to the units most observers use
@@ -117,19 +118,27 @@ def plot_frb(self,line,frb,fileout):
         bd3,bd4 = -1*FOV[1]/2./FOV[1]/2.
 
         ## only want to plot in color the lines that
-        sb_lim = np.log10(self.instrument[self.mode][])
-        obs = np.ma.masked_where((frb > ))
+        ## so one of the issues with using the masking is that
+        ## it's going to generate two different color bars
+        ## it may be better to make a seaborn colorbar for eac
+        ## but let's start somewhere
+        sb_lim = np.log10(self.instrument[self.mode]['SBlim'])
+        obs = np.ma.masked_where((frb > sb_lim),frb)
+        obs_frb = frb*obs.mask
 
-        plt.imshow(frb,cmap=cmap,vmin=-24,vmax=-14,extent=(bd1,bd2,bd3,bd4),
-                   origin='lower',interpolation=None)
-        plt.colorbar()
+        ax.imshow(frb,cmap=cmap,vmin=-24,vmax=-14,extent=(bd1,bd2,bd3,bd4),
+                   origin='lower',interpolation=None,cmap='Greys_r')
+        ax.imshow(obs_frb,vmin=sb_lim.value,vmax=-14,cmap=self.instrument[self.mode]['cmap'])
+        ax.colorbar()
         plt.savefig(fileout)
         plt.close()
     else:
-        PLOT A BLANK SQUARE
+        ax.set_facecolor('gray')
+        plt.savefig(fileout)
+        plt.close()
     return
 
-    def check_line_in_bandpass(self,line):
+  def check_line_in_bandpass(self,line):
         if isinstance(line,str):
             line = line_wavelengths[line]
         line_observed = (1+self.redshift)*line
