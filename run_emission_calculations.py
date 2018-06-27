@@ -9,6 +9,8 @@ import trident
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
+from consistency import *
+from yt.data_objects.particle_filters import add_particle_filter
 
 from matplotlib.colorbar import Colorbar
 from emission_functions import *
@@ -22,8 +24,13 @@ from holoviews.operation.datashader import datashade, aggregate
 from holoviews import Store
 hv.extension('matplotlib')
 
-base = "/Users/dalek/data/Molly/natural/nref11"
-#base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+def Stars(pfilter, data):
+      return data[("all", "particle_type")] == 2
+add_particle_filter("stars", function=Stars, filtered_type='all',
+                    requires=["particle_type"])
+
+#base = "/Users/dalek/data/Molly/natural/nref11"
+base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 fn = base+"/RD0016/RD0016"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 track_name = base+"/halo_track"
@@ -63,6 +70,7 @@ mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
 
 
 ds = yt.load(fn)
+ds.add_particle_filter('stars')
 track = Table.read(track_name, format='ascii')
 track.sort('col1')
 rb,rb_center,rb_width = get_refine_box(ds,ds.current_redshift,track)
@@ -870,11 +878,8 @@ def make_observer_maps(index,base,RD,resolution,redshift,field,int_time):
     emis = frb/(1+redshift)
     emis = emis*line_energies[field]
 
-
-
     return
 
-make_observer_maps()
 
 #make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
 #make_weighted_phase_diagrams('x','_nref11_','RD0016','forcedres',ds.current_redshift)
