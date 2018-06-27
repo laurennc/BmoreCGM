@@ -6,6 +6,7 @@ import trident
 from astropy.table import Table
 from astropy.cosmology import WMAP9 as cosmo
 from emission_functions import *
+from get_refine_box import *
 import yt.units as u
 
 # ok so general structure is that I'm going to have to make an FRB
@@ -47,6 +48,8 @@ LLAMAS = {'normal' :{'ang_res':0.75*u.arcsecond,'FOV':(1.*u.arcminute,1.*u.arcmi
           'fig_size':(4,4),'cmap':'PuRd_r'}
          }
 
+instr_dict = {'MUSE':MUSE,'KCWI':KCWI,'LLAMAS':LLAMAS}
+
 line_energies = {'CIII_977':2.03e-11*u.erg,'CIV':1.28e-11*u.erg,
                  'OVI':1.92e-11*u.erg,'SiIV':1.42e-11*u.erg,
                  'HAlpha':3.03e-12*u.erg,'LyAlpha':1.63e-11*u.erg}
@@ -62,16 +65,16 @@ class EmissionMap:
     self.ds = ds
     self.track = track
     self.rb,self.rb_center,self.rb_width = get_refine_box(self.ds,self.ds.current_redshift,self.track)
-    self.redshift = ds.redshift
-    self.box_width = ds.arr(rb_width,'code_length').in_units('kpc')
-    self.instrument = instrument
+    self.redshift = ds.current_redshift
+    self.box_width = ds.arr(self.rb_width,'code_length').in_units('kpc')
+    self.instrument = instr_dict[instrument]
     self.mode = mode
     return
 
   def make_frb(self,line,proj_axis,pickle_out):
       field = "Emission_"+line
-      if isinstance(axis,string):
-          proj_axis = axis_map[axis]
+      if isinstance(proj_axis,str):
+          proj_axis = axis_map[proj_axis]
 
       area_axes = [0,1,2]
       i = area_axes.index(proj_axis)
@@ -83,18 +86,18 @@ class EmissionMap:
 
       ## Now set up projection region
       ## Area should be size of FOV and not the refine region scaled down
-      FOV = ds.arr(FOV,'kpc').to('code_length')
+      FOV = self.ds.arr(FOV,'kpc').to('code_length')
       LE = np.copy(self.rb_center)
       LE[area_axes] -= FOV/2.
-      LE[proj_axis] -= rb_width/2.
+      LE[proj_axis] -= self.rb_width/2.
       RE = np.copy(self.rb_center)
       RE[area_axes] += FOV/2.
-      RE[proj_axis] += rb_width/2.
+      RE[proj_axis] += self.rb_width/2.
 
-      box = ds.r[LE[0]:RE[0],LE[1]:RE[1],LE[2]:RE[2]]
-      obj = ds.proj(('gas',field),proj_axis,data_source=box)
+      box = self.ds.r[LE[0]:RE[0],LE[1]:RE[1],LE[2]:RE[2]]
+      obj = self.ds.proj(('gas',field),proj_axis,data_source=box)
       frb = obj.to_frb((FOV[0].value,'code_length'),(int(num_cells[0]),int(num_cells[1])),
-                        height=(FOV[1].value,'code_length'),center=rb_center)
+                        height=(FOV[1].value,'code_length'),center=self.rb_center)
       cPickle.dump(frb[('gas',field)],open(pickle_out,'wb'),protocol=-1)
       return frb
 
@@ -102,34 +105,37 @@ class EmissionMap:
   def plot_frb(self,line,frb,fileout):
     fig = plt.figure(figsize=self.instrument[self.mode]['fig_size'])
     ax = fig.add_subplot(1,1,1)
-    if check_line_in_bandpass(line):
+    if self.check_line_in_bandpass(line):
         ## NEED TO SET PLOT SIZE SO THAT IT'S CONSISTENT
         ## BETWEEN ALL OF THE INSTRUMENTS
-        frb = cPickle.load(open(frb,'rb'))
+        ## FIX THIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #frb = cPickle.load(open(frb,'rb'))
 
             ## Convert to the units most observers use
         lenergy = line_energies[line]
-        frb = frb.to(1./((u.s*u.arcsecond**2*u.cm**2)))*lenergy
-        frb = np.log10(frbNAT/(1.+self.redshift)**4)
+        frb = frb.to('s**-1*arcsec**-2*cm**-2')*lenergy
+        frb = frb/(1.+self.redshift)**4
 
         FOVconvert = cosmo.kpc_proper_per_arcmin(self.redshift).value*u.kpc/u.arcmin
         FOV = (self.instrument[self.mode]['FOV']*FOVconvert).to('kpc')
         bd1,bd2 = -1*FOV[0]/2.,FOV[0]/2.
-        bd3,bd4 = -1*FOV[1]/2./FOV[1]/2.
+        bd3,bd4 = -1*FOV[1]/2.,FOV[1]/2.
 
         ## only want to plot in color the lines that
         ## so one of the issues with using the masking is that
         ## it's going to generate two different color bars
         ## it may be better to make a seaborn colorbar for eac
         ## but let's start somewhere
-        sb_lim = np.log10(self.instrument[self.mode]['SBlim'])
-        obs = np.ma.masked_where((frb > sb_lim),frb)
-        obs_frb = frb*obs.mask
+        #sb_lim = self.instrument[self.mode]['SBlim']
+        #sb_lim = 1./(u.cm**2*u.s*u.steradian)
+        #obs = np.ma.masked_where((frb > sb_lim),frb)
+        #obs_frb = frb*obs.mask
 
-        ax.imshow(frb,cmap=cmap,vmin=-24,vmax=-14,extent=(bd1,bd2,bd3,bd4),
-                   origin='lower',interpolation=None,cmap='Greys_r')
-        ax.imshow(obs_frb,vmin=sb_lim.value,vmax=-14,cmap=self.instrument[self.mode]['cmap'])
-        ax.colorbar()
+        print frb.units
+        plt.imshow(np.log10(frb),extent=(bd1,bd2,bd3,bd4),vmin=-25,vmax=-17,
+                   origin='lower',interpolation=None,cmap='bone')
+        #ax.imshow(np.log10(obs_frb),vmin=np.log10(sb_lim),vmax=-14,cmap=self.instrument[self.mode]['cmap'])
+        plt.colorbar()
         plt.savefig(fileout)
         plt.close()
     else:
@@ -145,7 +151,7 @@ class EmissionMap:
         bandpass = self.instrument[self.mode]['bandpass']
         if ((line_observed > bandpass[0]) & (line_observed < bandpass[1])):
             return True
-        else
+        else:
             return False
 
 def emission_line_energy(wavelength,unit):
