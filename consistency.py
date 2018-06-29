@@ -4,11 +4,36 @@ import seaborn as sns
 
 default_width = 85.  # kpc in projection
 
+axes_label_dict = {'density':'log Density [g / cm$^3$]',
+                   'temperature': 'log Temperature [K]',
+                   'cell_mass': 'log Cell Mass [Msun]',
+                   'x': 'X coordinate [comoving]',
+                   'y': 'Y coordinate [comoving]',
+                   'z': 'Z coordinate [comoving]',
+                   'O_p5_ion_fraction':'log [O VI Ionization Fraction]',
+                   'O_p5_number_density':'log [O VI Number Density]',
+                   'C_p3_ion_fraction':'log [C IV Ionization Fraction]',
+                   'C_p3_number_density':'log [C IV Number Density]',
+                   'Si_p3_ion_fraction':'log [Si IV Ionization Fraction]',
+                   'Si_p3_number_density':'log [Si IV Number Density]',
+                   }
+
+#this is a dictionary of fields where we prefer to
+# plot or visualize them in the log rather than the original yt / enzo
+# field. Try "if field_name in logfields: field_name = log10(field_name)"
+logfields = ('density', 'temperature', 'entropy', 'O_p5_ion_fraction',
+                'C_p3_ion_fraction', 'Si_p3_ion_fraction', 'O_p5_number_density',
+                'C_p3_number_density', 'Si_p3_number_density')
+
 phase_color_key = {b'cold':'salmon',
                    b'hot':'#ffe34d',
                    b'warm':'#4daf4a',
                    b'cool':'#984ea3'}
 
+metal_color_key = {b'high':'yellow',
+                   b'solar':'green',
+                   b'low':'purple',
+                   b'poor':'salmon'}
 
 species_dict =  {'CIII':'C_p2_number_density',
                  'CIV':'C_p3_number_density',
@@ -20,6 +45,13 @@ species_dict =  {'CIII':'C_p2_number_density',
                  'SiIV':"Si_p3_number_density",
                  'NeVIII':'Ne_p7_number_density'}
 
+ion_frac_color_key = {b'all':'black',
+                      b'low':'yellow',
+                      b'med':'orange',
+                      b'high':'red'}
+
+discrete_cmap = mpl.colors.ListedColormap(['#565656','#4daf4a',"#d73027","#984ea3","#ffe34d",'#4575b4','darkorange'])
+discrete_cmap_rainbow = mpl.colors.ListedColormap(['#4daf4a',"#ffe34d",'darkorange',"#d73027","#984ea3",'#4575b4','#565656'])
 
 density_color_map = sns.blend_palette(("black","#984ea3","#d73027","darkorange","#ffe34d","#4daf4a","white"), n_colors=60, as_cmap=True)
 density_proj_min = 5e-2  ## msun / pc^2
@@ -27,7 +59,8 @@ density_proj_max = 1e4
 density_slc_min = 5e-7  ## msun / pc^3
 density_slc_max = 5
 
-metal_color_map = sns.blend_palette(("black","#984ea3","#4575b4","#4daf4a","#ffe34d","darkorange"), as_cmap=True)
+metal_color_map = sns.blend_palette(("black","#984ea3","#4575b4","#4daf4a",
+                    "#ffe34d","darkorange"), as_cmap=True)
 metal_min = 1.e-4
 metal_max = 2.
 metal_density_min = 1.e-5
@@ -40,6 +73,10 @@ temperature_max = 1.e4
 entropy_color_map = "Spectral"
 entropy_min = 1.e-4
 entropy_max = 1.e3
+
+pressure_color_map = "Spectral"
+pressure_min = 1.e-16
+pressure_max = 1.e-9
 
 h1_color_map = sns.blend_palette(("white","#ababab","#565656","black","#4575b4","#984ea3","#d73027","darkorange","#ffe34d"), as_cmap=True)
 h1_proj_min = 1.e12
