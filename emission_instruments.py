@@ -131,7 +131,6 @@ class EmissionMap:
         #obs = np.ma.masked_where((frb > sb_lim),frb)
         #obs_frb = frb*obs.mask
 
-        print frb.units
         plt.imshow(np.log10(frb),extent=(bd1,bd2,bd3,bd4),vmin=-25,vmax=-17,
                    origin='lower',interpolation=None,cmap='bone')
         #ax.imshow(np.log10(obs_frb),vmin=np.log10(sb_lim),vmax=-14,cmap=self.instrument[self.mode]['cmap'])
