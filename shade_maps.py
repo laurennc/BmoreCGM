@@ -111,9 +111,11 @@ def prep_dataframe(all_data, refine_box, refine_width, field1, field2):
     print("you have requested fields ", field1, field2)
 
     # add those two fields
-    logfields = ('density', 'temperature', 'entropy', 'O_p5_ion_fraction',
-                'C_p3_ion_fraction', 'Si_p3_ion_fraction', 'O_p5_number_density',
-                'C_p3_number_density', 'Si_p3_number_density')
+    #logfields = ('density', 'temperature', 'entropy', 'O_p5_ion_fraction',
+    #            'C_p3_ion_fraction', 'Si_p3_ion_fraction', 'O_p5_number_density',
+    #            'C_p3_number_density', 'Si_p3_number_density')
+    logfields = ('density','temperature','entropy','O_p5_number_density',
+                 'C_p3_number_density','Si_p3_number_density')
     if field1 not in data_frame.columns:
         print("Did not find "+field1+" in the dataframe, will add it.")
         if field1 in logfields:
@@ -129,19 +131,15 @@ def prep_dataframe(all_data, refine_box, refine_width, field1, field2):
         else:
             data_frame[field2] = all_data[field2]
 
-    #logf_o6 = np.log10(O_p5_ion_fraction + 1e-9)
-    #logf_o6 = np.log10(C_p3_ion_fraction + 1e-9)
-    #logf_o6 = np.log10(Si_p3_ion_fraction + 1e-9)
-
-
-    #lx = scale_lvec(all_data['specific_angular_momentum_x'])
-    #ly = scale_lvec(all_data['specific_angular_momentum_y'])
-    #lz = scale_lvec(all_data['specific_angular_momentum_z'])
-
-    #data_frame.o6frac = data_frame.o6frac.astype('category')
-    #data_frame.c4frac = data_frame.c4frac.astype('category')
-    #data_frame.si4frac = data_frame.si4frac.astype('category')
-
+    if ((field1[0:4] == 'O_p5') or (field2[0:4] == 'O_p5')):
+        data_frame['o6frac'] = categorize_by_fraction(np.array(data_frame['O_p5_ion_fraction']))
+        data_frame.o6frac = data_frame.o6frac.astype('category')
+    if ((field1[0:4] == 'C_p3') or (field2[0:4] == 'C_p3')):
+        data_frame['c4frac'] = categorize_by_fraction(np.array(data_frame['C_p3_ion_fraction']))
+        data_frame.c4frac = data_frame.c4frac.astype('category')
+    if ((field1[0:5] == 'Si_p3') or (field2[0:4] == 'Si_p3')):
+        data_frame['si4frac'] = categorize_by_fraction(np.array(data_frame['Si_p3_ion_fraction']))
+        data_frame.si4frac = data_frame.si4frac.astype('category')
 
     return data_frame
 
@@ -207,64 +205,3 @@ def drive(fname, trackfile, ion_list=['H I', 'C IV', 'Si IV', 'O VI']):
     render_image(data_frame, 'x', 'y', 'phase', (-3,3), (-3,3), 'RD0020_proj')
     render_image(data_frame, 'x', 'mass', 'phase', (-3.1, 3.1), (-1, 8), 'RD0020_mass')
     render_image(data_frame, 'x', 'lz', 'phase', (-1.1, 1.1), (-1.1, 1.1), 'RD0020_lz')
-
-
-
-def simple_plot(fname, trackfile, field1, field2, colorcode, ranges, *outfile):
-    """This function makes a simple plot with two fields plotted against
-        one another. The color coding is given by variable 'colorcode'
-        which can be phase, metal, or an ionization fraction"""
-
-    all_data, refine_box, refine_width = \
-        prep_dataset(fname, trackfile,
-        ion_list=['H I', 'C IV', 'Si IV', 'O VI'], region='sphere')
-
-    data_frame = prep_dataframe(all_data, refine_box, refine_width, field1, field2)
-
-    if len(outfile) == 0:
-        outfile = fname[0:6] + '_' + field1 + '_' + field2 + '_' + colorcode
-        print(outfile)
-
-    image = render_image(data_frame, field1, field2, colorcode, *ranges, outfile)
-    wrap_axes(outfile, field1, field2, ranges)
-    return data_frame
-
-
-def cart2pol(x, y):
-    return np.sqrt(x**2 + y**2), np.arctan2(y, x)
-
-def pol2cart(rho, phi):
-    return rho * np.cos(phi), rho * np.sin(phi)
-
-def rotate_box(fname, trackfile, x1, y1, x2, y2):
-    """ not yet functional"""
-
-    print("NEED TO DO VARIABLE NORMALIZATION HERE SINCE IT IS NOT DONE ANYWEHRE ELSE NOW")
-    all_data, refine_box, refine_width = \
-        prep_dataset(fname, trackfile, ion_list=['H I', 'C IV', 'Si IV', 'O VI'],
-                     region='sphere')
-
-    data_frame = prep_dataframe(all_data, refine_box, refine_width)
-
-    phase = ((-1.1, 1.1), (-1.1, 1.1))
-    proj = ((-3.1, 3.1), (-3.1, 3.1))
-
-    # this function rotates from x/y plane to density / y
-    for ii in np.arange(100):
-        x_center, d_center = 0.5, 0.5
-        rr, phi = cart2pol(data_frame['x'] - x_center, data_frame['dens'] - d_center)
-        xxxx, yyyy = pol2cart(rr, phi - np.pi / 2. / 100.)
-        data_frame.x = xxxx+x_center
-        data_frame.dens = yyyy+d_center
-        render_image(data_frame, 'x', 'y', 'phase', *phase, 'RD0020_phase'+str(1000+ii))
-        print(ii)
-
-    # now start with dens / y and gradually turn y into temperature
-    for ii in np.arange(100):
-        y_center, t_center = 0.5, 0.5
-        rr, phi = cart2pol(data_frame['y'] - y_center, data_frame['temperature'] - t_center)
-        xxxx, yyyy = pol2cart(rr, phi - np.pi / 2. / 100.)
-        data_frame.y = xxxx+y_center
-        data_frame.temperature = yyyy+t_center
-        render_image(data_frame, 'x', 'y', 'phase', *phase, 'RD0020_phase'+str(2000+ii))
-        print(ii)
