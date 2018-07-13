@@ -172,6 +172,7 @@ def create_phys_emis_weight_frbs():
             ion_field = line_elements[0]+'_p'+ion_num+'_ion_fraction'
             trident.add_ion_fields(ds,ions=[tri_line])
         else:
+            trident.add_ion_fields(ds,ions=['H I'])
             ion_field = 'H_p0_ion_fraction'
         print line
         for index in 'xyz':
