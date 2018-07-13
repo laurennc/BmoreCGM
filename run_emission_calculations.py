@@ -31,7 +31,7 @@ add_particle_filter("stars", function=Stars, filtered_type='all',
 
 #base = "/Users/dalek/data/Molly/natural/nref11"
 base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
-fn = base+"/RD0016/RD0016"
+fn = base+"/RD0020/RD0020"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 track_name = base+"/halo_track"
 args = fn.split('/')
@@ -105,7 +105,8 @@ def create_emission_frbs():
             for res in res_list:
                 reskpc = round(res.in_units('kpc'),2)
                 print reskpc,' kpc'
-                num_cells = np.ceil(rb_width/res)
+                num_cells = int(np.ceil(rb_width/res).value)
+                #print 'num_cells: ',num_cells
 
                 if res == res_list[0]:
                     fileout = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_'+field+'_forcedres.cpkl'
@@ -568,14 +569,14 @@ def holoviews_general_plot(xfield,yfield,ranges,fout,cmap,weight_by=None):
     if weight_by != None:
         weight = rb[weight_by]
 
-    df = pd.DataFrame({xfield:xx, yfield:yy, weight_by:weight)
+    df = pd.DataFrame({xfield:xx, yfield:yy, weight_by:weight})
 
     if weight_by == None:
         scatterplot = hv.Scatter(df,kdims=[xfield],vdims=[yfield])
-        full_plot = (datashade(scatterplot),cmap=cm.Plasma,dynamic=False,x_range=(ranges[0],ranges[1]),
-                     y_range=(ranges[2],ranges[3])).opts(plot=dict(aspect='square'))
+        full_plot = (datashade(scatterplot,cmap=cm.Plasma,dynamic=False,x_range=(ranges[0],ranges[1]),
+                     y_range=(ranges[2],ranges[3]))).opts(plot=dict(aspect='square'))
     else:
-        full_plot = aggregate(hv.Scatter(df,[xfield,yfield])),y_range=(ranges[2],ranges[3]),aggregator=dshade.sum(weight_by)
+        full_plot = aggregate(hv.Scatter(df,[xfield,yfield]),y_range=(ranges[2],ranges[3]),aggregator=dshade.sum(weight_by))
         full_plot = full_plot.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cmap))
 
     renderer = Store.renderers['matplotlib'].instance(fig='pdf', holomap='gif')
@@ -872,14 +873,7 @@ def make_weighted_phase_diagrams(index,base,RD,resolution,redshift):
         plt.close()
     return
 
-def make_observer_maps(index,base,RD,resolution,redshift,field,int_time):
-    filein = 'frbs/frb'+index+'_'+refined_base+'_'+RD+'_Emission_'+field+'_'+resolution+'.cpkl'
-    frb = cPickle.load(open(filein,'rb'))
-    emis = frb/(1+redshift)
-    emis = emis*line_energies[field]
-
-    return
-
 
 #make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
 #make_weighted_phase_diagrams('x','_nref11_','RD0016','forcedres',ds.current_redshift)
+create_emission_frbs()
