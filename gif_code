@@ -1,0 +1,18 @@
+convert -loop 0 -delay 200 z2_x_Emission_OVI_0.2kpc_SBdim.pdf z2_x_Emission_OVI_0.5kpc_SBdim.pdf z2_x_Emission_OVI_1kpc_SBdim.pdf z2_x_Emission_OVI_5kpc_SBdim.pdf z2_x_Emission_OVI_10kpc_SBdim.pdf z2_x_Emission_OVI_SBdim.gif
+convert -loop 0 -delay 200 z2_x_Emission_CIV_0.2kpc_SBdim.pdf z2_x_Emission_CIV_0.5kpc_SBdim.pdf z2_x_Emission_CIV_1kpc_SBdim.pdf z2_x_Emission_CIV_5kpc_SBdim.pdf z2_x_Emission_CIV_10kpc_SBdim.pdf z2_x_Emission_CIV_SBdim.gif
+convert -loop 0 -delay 200 z2_x_Emission_CIII_977_0.2kpc_SBdim.pdf z2_x_Emission_CIII_977_0.5kpc_SBdim.pdf z2_x_Emission_CIII_977_1kpc_SBdim.pdf z2_x_Emission_CIII_977_5kpc_SBdim.pdf z2_x_Emission_CIII_977_10kpc_SBdim.pdf z2_x_Emission_CIII_977_SBdim.gif
+convert -loop 0 -delay 200 z2_x_Emission_HAlpha_0.2kpc_SBdim.pdf z2_x_Emission_HAlpha_0.5kpc_SBdim.pdf z2_x_Emission_HAlpha_1kpc_SBdim.pdf z2_x_Emission_HAlpha_5kpc_SBdim.pdf z2_x_Emission_HAlpha_10kpc_SBdim.pdf z2_x_Emission_HAlpha_SBdim.gif
+
+
+convert                                                  \
+  -delay 100                                              \
+   $(for i in $(ls -v z2_x_Emission_OVI_*_SBdim.pdf); do echo $i; done) \
+  -loop 0                                                \
+   animated.gif
+
+
+scp pbs_output.txt lnc2115@yetisubmit.cc.columbia.edu:~/vega/repos/storage
+
+Turning from just absorption, I've been working on making emission maps!
+
+It's straightforward to generate these maps for the lines of your choice.
