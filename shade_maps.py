@@ -149,10 +149,11 @@ def wrap_axes(filename, field1, field2, ranges):
         axes using matplotlib and so offering full customization."""
 
     img = mpimg.imread(filename+'.png')
-    img2 = np.flip(img,0)
+    #img2 = np.flip(img,0)
     fig = plt.figure(figsize=(8,8))
     ax = fig.add_axes([0.1, 0.1, 0.88, 0.88])
-    ax.imshow(img2)
+    #ax.imshow(img2)
+    ax.imshow(img)
 
     xtext = ax.set_xlabel(axes_label_dict[field1], fontname='Arial', fontsize=20)
     ax.set_xticks(np.arange((ranges[0][1] - ranges[0][0]) + 1.) * 1000. / (ranges[0][1] - ranges[0][0]))
@@ -160,7 +161,8 @@ def wrap_axes(filename, field1, field2, ranges):
 
     ytext = ax.set_ylabel(axes_label_dict[field2], fontname='Arial', fontsize=20)
     ax.set_yticks(np.arange((ranges[1][1] - ranges[1][0]) + 1.) * 1000. / (ranges[1][1] - ranges[1][0]))
-    ax.set_yticklabels([ str(int(s)) for s in np.arange((ranges[1][1] - ranges[1][0]) + 1.) +  ranges[1][0] ], fontname='Arial', fontsize=20)
+    print [ str(int(s)) for s in np.arange((ranges[1][1] - ranges[1][0]) + 1.) +  ranges[1][0] ]
+    ax.set_yticklabels([ str(int(s)) for s in np.arange((ranges[1][0] - ranges[1][1]) + 1.) +  ranges[1][0] ], fontname='Arial', fontsize=20)
 
     plt.savefig(filename)
 
