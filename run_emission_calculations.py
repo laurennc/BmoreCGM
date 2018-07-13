@@ -29,10 +29,11 @@ def Stars(pfilter, data):
 add_particle_filter("stars", function=Stars, filtered_type='all',
                     requires=["particle_type"])
 
-#base = "/Users/dalek/data/Molly/natural/nref11"
-base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+base = "/Users/dalek/data/Molly/natural/nref11"
+#base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 fn = base+"/RD0020/RD0020"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
+lines2 = ['O VI','C IV','C III _977','Si IV','H Alpha']
 track_name = base+"/halo_track"
 args = fn.split('/')
 
@@ -56,6 +57,9 @@ line_energies = {'CIII_977':4.*np.pi*2.03e-11,
                  'LyAlpha':4.*np.pi*1.63e-11}
 
 units_key = {'cell_mass':'Msun','Density':'g/cm**3','cell_volume':'kpc**3'}
+
+roman_numerals =  {'1':'I','2':'II','3':'III','4':'IV','5':'V','6':'VI','7':'VII','8':'VIII'}
+roman_numerals2 = {'I':'1','II':'2','III':'3','IV':'4','V':'5','VI':'6','VII':'7','VIII':'8'}
 
 fontcs ={'fontname':'Helvetica','fontsize':16}
 #mpl.rc('text', usetex=True)
@@ -159,23 +163,32 @@ def create_phys_emis_weight_frbs():
     res_list = np.append(dx,dxs_list)
     res_list = ds.arr(res_list,'code_length')
 
-    for line in lines:
-        field = 'Emission_'+line
+    for line in lines2:
+        field = 'Emission_'+line.replace(' ','')
+        line_elements = line.split(' ')
+        if (line_elements[0] != 'H'):
+            tri_line = line_elements[0]+' '+line_elements[1]
+            ion_num = str(int(roman_numerals2[line_elements[1]])-1)
+            ion_field = line_elements[0]+'_p'+ion_num+'_ion_fraction'
+            trident.add_ion_fields(ds,ions=[tri_line])
+        else:
+            ion_field = 'H_p0_ion_fraction'
         print line
         for index in 'xyz':
             print index
             for res in res_list:
                 reskpc = round(res.in_units('kpc'),2)
                 print reskpc,' kpc'
-                num_cells = np.ceil(rb_width/res)
+                num_cells = int(np.ceil(rb_width/res).value)
 
                 if res == res_list[0]:
                     filehden = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_forcedres.cpkl'
                     filetemp = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_forcedres.cpkl'
+                    fileion  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_ionfrac_'+field+'_forcedres.cpkl'
                 else:
                     filehden = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_'+str(reskpc)+'kpc.cpkl'
                     filetemp = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_'+str(reskpc)+'kpc.cpkl'
-
+                    fileion  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_ionfrac_'+field+'_'+str(reskpc)+'kpc.cpkl'
 
                 obj = ds.proj('H_nuclei_density',index,data_source=rb,weight_field=field)
                 frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
@@ -184,6 +197,10 @@ def create_phys_emis_weight_frbs():
                 obj = ds.proj('temperature',index,data_source=rb,weight_field=field)
                 frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
                 cPickle.dump(frb['temperature'],open(filetemp,'wb'),protocol=-1)
+
+                obj = ds.proj(('gas',ion_field),index,data_source=rb,weight_field=field)
+                frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
+                cPickle.dump(frb[('gas',ion_field)],open(fileion,'wb'),protocol=-1)
     return
 
 def plot_ytProjections():
@@ -876,4 +893,5 @@ def make_weighted_phase_diagrams(index,base,RD,resolution,redshift):
 
 #make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
 #make_weighted_phase_diagrams('x','_nref11_','RD0016','forcedres',ds.current_redshift)
-create_emission_frbs()
+#create_emission_frbs()
+create_phys_emis_weight_frbs()
