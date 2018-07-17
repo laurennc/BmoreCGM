@@ -29,8 +29,8 @@ def Stars(pfilter, data):
 add_particle_filter("stars", function=Stars, filtered_type='all',
                     requires=["particle_type"])
 
-base = "/Users/dalek/data/Molly/natural/nref11"
-#base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+#base = "/Users/dalek/data/Molly/natural/nref11"
+base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 fn = base+"/RD0020/RD0020"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 lines2 = ['O VI','C IV','C III _977','Si IV','H Alpha']
@@ -215,7 +215,7 @@ def plot_ytProjections():
 def make_emission_gif_plots():
     natural_base = '_nref11_RD0016_'
     refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0016_'
-    nref11f_base = '_nref11f_refine200kpc_z4to2_RD0016_'
+    nref11f_base = '_nref11f_refine200kpc_RD0016_'
     box_size = ds.arr(rb_width,'code_length').in_units('kpc')
     box_size = np.ceil(box_size/2.)
     res_list = [0.2,0.5,1.0,5.0,10.0]
@@ -895,4 +895,5 @@ def make_weighted_phase_diagrams(index,base,RD,resolution,redshift):
 #make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
 #make_weighted_phase_diagrams('x','_nref11_','RD0016','forcedres',ds.current_redshift)
 #create_emission_frbs()
-create_phys_emis_weight_frbs()
+#create_phys_emis_weight_frbs()
+make_emission_gif_plots()
