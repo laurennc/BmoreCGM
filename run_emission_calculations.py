@@ -29,8 +29,8 @@ def Stars(pfilter, data):
 add_particle_filter("stars", function=Stars, filtered_type='all',
                     requires=["particle_type"])
 
-base = "/Users/dalek/data/Molly/natural/nref11"
-#base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+#base = "/Users/dalek/data/Molly/natural/nref11"
+base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 fn = base+"/RD0020/RD0020"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 lines2 = ['O VI','C IV','C III _977','Si IV','H Alpha']
@@ -290,6 +290,99 @@ def make_emission_gif_plots():
                     lineout = line
                 fig.suptitle('z=3, '+lineout+', '+str(res)+'kpc'+', '+str(pixsize)+'"',**fontrc)
                 plt.savefig('z3_'+index+'_'+field+'_'+str(res)+'kpc_SBdim_obscol.pdf')
+                plt.close()
+
+    return
+
+def make_small_emission_gif_plots():
+    natural_base = '_nref11_RD0016_'
+    refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0016_'
+    nref11f_base = '_nref11f_refine200kpc_RD0016_'
+    box_size = ds.arr(rb_width,'code_length').in_units('kpc')
+    box_size = np.ceil(box_size/2.)
+    res_list = [0.2,0.5,1.0,5.0,10.0]
+    fontrc ={'fontname':'Helvetica','fontsize':20}
+    mpl.rc('text', usetex=True)
+    make_obs = True
+
+    if make_obs:
+        cmap = mymap
+        norm = None
+    else:
+        cmap = 'viridis'
+        norm = None
+
+    for line in lines:
+        field = 'Emission_'+line
+        for index in 'xyz':
+            for res in res_list:
+                if res == res_list[0]:
+                    fileinNAT = 'frbs/frb'+index+natural_base+field+'_forcedres.cpkl'
+                    fileinREF = 'frbs/frb'+index+refined_base+field+'_forcedres.cpkl'
+                    fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
+                    pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*0.182959,2)
+                else:
+                    fileinNAT = 'frbs/frb'+index+natural_base+field+'_'+str(res)+'kpc.cpkl'
+                    fileinREF = 'frbs/frb'+index+refined_base+field+'_'+str(res)+'kpc.cpkl'
+                    fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_'+str(res)+'kpc.cpkl'
+                    pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*res,2)
+
+                frbNAT = cPickle.load(open(fileinNAT,'rb'))
+                frbREF = cPickle.load(open(fileinREF,'rb'))
+                frbN11 = cPickle.load(open(fileinN11,'rb'))
+
+                if make_obs == True:
+                    frbNAT = np.log10(frbNAT/(1.+redshift)**4)
+                    frbREF = np.log10(frbREF/(1.+redshift)**4)
+                    frbN11 = np.log10(frbN11/(1.+redshift)**4)
+                else:
+                    frbNAT = np.log10(frbNAT)
+                    frbREF = np.log10(frbREF)
+                    frbN11 = np.log10(frbN11)
+
+                bsL,bsR = -20.,20.
+                num_pix = int(np.ceil(bsR/res))
+                box_center = int(np.ceil(frbNAT.shape[0]/2.))
+                iL,iR = box_center-num_pix,box_center+num_pix
+
+                icA,icB = np.unravel_index(frbREF.argmax(),frbREF.shape)
+                icA1,icA2 = icA-num_pix,icA+num_pix
+                icB1,icB2 = icB-num_pix,icB+num_pix
+
+                icL,icR = np.unravel_index(frbN11.argmax(),frbN11.shape)
+                icL1,icL2 = icL-num_pix,icL+num_pix
+                icR1,icR2 = icR-num_pix,icR+num_pix
+
+                fig,ax = plt.subplots(1,3)
+                fig.set_size_inches(14,6)
+
+
+                ax[0].imshow(frbNAT[iL:iR+1,iL:iR+1],cmap=cmap,vmin=-5,vmax=3,
+                             extent=(bsL,bsR,bsR,bsL),origin='lower',
+                             interpolation=None)
+
+                ax[1].imshow(frbREF[icA1:icA2+1,icB1:icB2+1],cmap=cmap,vmin=-5,vmax=3,
+                             extent=(bsL,bsR,bsR,bsL),origin='lower',
+                             interpolation=None)
+
+                im2 = ax[2].imshow(frbN11[icL1:icL2+1,icR1:icR2+1],cmap=cmap,vmin=-5,vmax=3,
+                             extent=(bsL,bsR,bsR,bsL),origin='lower',
+                             interpolation=None)
+
+                axins = inset_axes(ax[2],width="5%", height="100%",loc=3,
+                                   bbox_to_anchor=(1.07, 0.0, 1, 1),
+                                   bbox_transform=ax[2].transAxes,borderpad=0)
+
+                ax[0].set_title('Natural',**fontrc)
+                ax[1].set_title('Forced Refine 10',**fontrc)
+                ax[2].set_title('Forced Refine 11',**fontrc)
+                cb = fig.colorbar(im2, cax=axins,label=r'log( photons s$^{-1}$ cm$^{-2}$ sr$^{-1}$)')
+                if line == 'CIII_977':
+                    lineout = 'CIII 977'
+                else:
+                    lineout = line
+                fig.suptitle('z=3, '+lineout+', '+str(res)+'kpc'+', '+str(pixsize)+'"',**fontrc)
+                plt.savefig('z3_'+index+'_'+field+'_'+str(res)+'kpc_SBdim_obscol_ZOOM20kpc.pdf')
                 plt.close()
 
     return
@@ -937,7 +1030,6 @@ def hden_temp_ionfrac_hist(index,base,RD,line,resolution,redshift):
 
     return hist,avgvals,maxvals #,averages
 
-
 def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
     ds = yt.load(fn)
     #lines = ['CIII_977']
@@ -990,8 +1082,9 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
 
 #make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
 #make_weighted_phase_diagrams('x','_nref11_','RD0020','forcedres',ds.current_redshift)
-make_ionfrac_weighted_phase_diagrams('x','_nref11_','RD0020','forcedres',ds.current_redshift)
+#make_ionfrac_weighted_phase_diagrams('x','_nref11_','RD0020','forcedres',ds.current_redshift)
 #make_ionfrac_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
 #create_emission_frbs()
+make_small_emission_gif_plots()
 #create_phys_emis_weight_frbs()
 #make_emission_gif_plots()
