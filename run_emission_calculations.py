@@ -29,8 +29,8 @@ def Stars(pfilter, data):
 add_particle_filter("stars", function=Stars, filtered_type='all',
                     requires=["particle_type"])
 
-#base = "/Users/dalek/data/Molly/natural/nref11"
-base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+base = "/Users/dalek/data/Molly/natural/nref11"
+#base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 fn = base+"/RD0020/RD0020"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 lines2 = ['O VI','C IV','C III _977','Si IV','H Alpha']
@@ -891,9 +891,107 @@ def make_weighted_phase_diagrams(index,base,RD,resolution,redshift):
         plt.close()
     return
 
+def hden_temp_ionfrac_hist(index,base,RD,line,resolution,redshift):
+    hden_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_hden_Emission_'+line+'_'+resolution+'.cpkl'
+    temp_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_temp_Emission_'+line+'_'+resolution+'.cpkl'
+    ionf_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_ionfrac_Emission_'+line+'_'+resolution+'.cpkl'
 
-#make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
-#make_weighted_phase_diagrams('x','_nref11_','RD0016','forcedres',ds.current_redshift)
+    hden = cPickle.load(open(hden_file,'rb'))
+    temp = cPickle.load(open(temp_file,'rb'))
+    ionf = cPickle.load(open(ionf_file,'rb'))
+
+    hden,temp,ionf = np.log10(hden.flat),np.log10(temp.flat),ionf.flat
+
+    hist, xedges, yedges  = np.histogram2d(hden,temp,range=[[-6,1],[3.5, 6.5]],bins=120)#,emis=coldens)
+
+    xbins = np.digitize(hden,xedges[1:-1])
+    ybins = np.digitize(temp,yedges[1:-1])
+
+    totvals = np.zeros((len(xedges[1:]),len(yedges[1:])))
+    numvals = np.zeros((len(xedges[1:]),len(yedges[1:])))
+    maxvals = np.zeros((len(xedges[1:]),len(yedges[1:])))
+
+    for i in range(len(ionf)):
+        totvals[xbins[i],ybins[i]] += ionf[i]
+        numvals[xbins[i],ybins[i]] += 1
+        if ionf[i] > maxvals[xbins[i],ybins[i]]:
+            maxvals[xbins[i],ybins[i]] = ionf[i]
+
+    avgvals = totvals/numvals
+    idx = np.where(totvals == 0)
+    avgvals[idx] = 0
+
+    ## I'm going to want to plot the average values on a plot but the issue is
+    ## that the nans throw off the averages. But there are so many arrays to
+    ## parse between it's easiest just to do it at the end
+    #averages = np.zeros(4)
+    #idA = np.where(emis > 1.)[0]
+    #averages[2],averages[3] = np.average(hden[idA]),np.average(temp[idA])
+
+    #id1 = np.argwhere(np.isnan(hden))
+    #id2 = np.argwhere(np.isnan(temp))
+
+    #hden = np.delete(hden, id1)
+    #temp = np.delete(temp, id2)
+    #averages[0],averages[1] = np.average(hden),np.average(temp)
+
+    return hist,avgvals,maxvals #,averages
+
+
+def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
+    ds = yt.load(fn)
+    #lines = ['CIII_977']
+    for line in lines:
+        hist,avgvals,maxvals = hden_temp_ionfrac_hist(index,base,RD,line,resolution,ds.current_redshift)
+
+        fig = plt.figure(1, figsize=(9,8))
+        gs = gridspec.GridSpec(3,3, height_ratios=[0.2,1,0.05], width_ratios=[1,0.2,0.2])
+        gs.update(left=0.075, right=0.93, bottom=0.09, top=0.95, wspace=0.00, hspace=0.00)
+
+        # --------------------------------------------------------
+        ax1 = plt.subplot(gs[1,0])
+        # --------------------------------------------------------
+        plt1 = ax1.imshow(avgvals.T,extent=[-6,1,3.5,6.5],
+                          interpolation='nearest',origin='lower',cmap='Purples')#mymap,vmin=-5,vmax=3)
+
+        add_grid(ax1)
+        ax1.set_xlim([-6,1])
+        ax1.set_ylim([3.5,6.5])
+        ax1.set_xlabel(r' ') # Force this empty !
+        ax1.set_xticks(np.linspace(-6,1,8)) # Force this for consistency with hists!
+        ax1.set_xticklabels(np.linspace(-6,1,8))
+        ax1.set_ylabel(r'Temperature [log(K)]')
+        ax1.set_xlabel(r'Hydrogen Number Density [log(cm^{-3})]')
+        x0,x1 = ax1.get_xlim()
+        y0,y1 = ax1.get_ylim()
+        ax1.set_aspect((x1-x0)/(y1-y0))
+        plt.colorbar(plt1)
+        # --------------------------------------------------------
+        #cbax = plt.subplot(gs[2,0]) # Place it where it should be.
+        # --------------------------------------------------------
+        #cb = Colorbar(ax = cbax, mappable = plt1, orientation = 'horizontal', ticklocation = 'bottom')
+        #cb.set_label(r'Colorbar !', labelpad=5)
+
+        # --------------------------------------------------------
+        #ax1v = plt.subplot(gs[1,1])
+        # --------------------------------------------------------
+        #add_phase_histograms(ax1v,'temp',index,base,RD,resolution,redshift,line)
+
+        # --------------------------------------------------------
+        #ax1h = plt.subplot(gs[0,0])
+        # --------------------------------------------------------
+        #add_phase_histograms(ax1h,'hden',index,base,RD,resolution,redshift,line)
+
+        plt.savefig('phase'+base+RD+'_weighted_Emission_'+line+'_ionfrac_'+resolution+'.pdf')
+        plt.close()
+    return
+
+
+
+#make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
+#make_weighted_phase_diagrams('x','_nref11_','RD0020','forcedres',ds.current_redshift)
+make_ionfrac_weighted_phase_diagrams('x','_nref11_','RD0020','forcedres',ds.current_redshift)
+#make_ionfrac_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
 #create_emission_frbs()
 #create_phys_emis_weight_frbs()
-make_emission_gif_plots()
+#make_emission_gif_plots()
