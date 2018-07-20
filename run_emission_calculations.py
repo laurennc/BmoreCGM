@@ -770,16 +770,15 @@ def covering_fraction_by_radius(rb_width,SB_cutoff=1.):
 
     return
 
-def cumulative_distribution_function(ax,line,res,rb_width):
+def cumulative_distribution_function(ax,index,line,res,rb_width):
     field = 'Emission_'+line
-    bases = ['_nref11_RD0016_','_nref11n_nref10f_refine200kpc_z4to2_RD0016_','_nref11f_refine200kpc_z4to2_RD0016_']
+    bases = ['_nref11_RD0016_','_nref11n_nref10f_refine200kpc_z4to2_RD0016_','_nref11f_refine200kpc_RD0016_']
     #colors = ['3 colors here!']
 
     rb_width = ds.quan(rb_width,'code_length').in_units('kpc')
     rb_width = float(rb_width.value)
 
     bins = np.linspace(-1.5,3.5,11)
-    index = 'x'
 
     ls = iter(['-.', '-', '--'])
     for base in bases:
@@ -808,13 +807,13 @@ def cumulative_distribution_function(ax,line,res,rb_width):
 
         label_out = base.split('_')[1]
         ls_here = ls.next()
-        ax.plot(bins,hist,label=label_out,color=line_color_key[line],linestyle=ls_here,lw=1.5)
-        ax.plot(bins,hist,color=line_color_key[line],marker='s',linestyle=ls_here,lw=1.5)
+        ax.plot(bins,hist,label=label_out,color=line_color_key[line],linestyle=ls_here,lw=2.0)
+        #ax.plot(bins,hist,color=line_color_key[line],marker='s',linestyle=ls_here,lw=1.5)
 
     #ax.set_xlabel('SB')
     #ax.set_ylabel('Pix Fraction')
     ax.set_xlim(-1,3)
-    ax.set_ylim(-0.01,0.41)
+    ax.set_ylim(-0.01,0.31)
     ax.legend()
     #plt.savefig('SB_cdf_RD0016_'+field+'_forcedres.pdf')
     #plt.close()
@@ -826,11 +825,13 @@ def cdf_plot_loop():
     fig.set_size_inches(6,6)
     ax = ax.flatten()
     subplts = iter(ax)
+    lines = ['OVI','CIV','CIII_977','SiIV']
+    index = 'z'
     for line in lines:
-        cumulative_distribution_function(subplts.next(),line,'forced',rb_width)
+        cumulative_distribution_function(subplts.next(),index,line,'forced',rb_width)
 
     plt.tight_layout()
-    plt.savefig('SB_cdf_RD0016_all_forced.pdf')
+    plt.savefig('SB_'+index+'_cdf_RD0016_all_forced.pdf')
     plt.close()
     return
 
@@ -1085,6 +1086,7 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
 #make_ionfrac_weighted_phase_diagrams('x','_nref11_','RD0020','forcedres',ds.current_redshift)
 #make_ionfrac_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
 #create_emission_frbs()
-make_small_emission_gif_plots()
+#make_small_emission_gif_plots()
 #create_phys_emis_weight_frbs()
 #make_emission_gif_plots()
+cdf_plot_loop()
