@@ -4,7 +4,7 @@ import yt
 import yt.units as u
 #import builtins
 
-patt = "/Users/dalek/data/cloudy_data/emissivity_tables/bertone_z3/bertone_z3_run%i.dat"
+patt = "/Users/dalek/data/cloudy_data/emissivity_tables/bertone_z1/bertone_run%i.dat"
 
 def get_refine_box(ds, zsnap, track):
     ## find closest output, modulo not updating before printout
@@ -73,8 +73,8 @@ def parse_cloudy_lines_file(filein,fileout):
     return
 
 def make_Cloudy_table(table_index):
-        hden_n_bins, hden_min, hden_max = 23, -9, 2
-        T_n_bins, T_min, T_max = 71, 2, 8
+        hden_n_bins, hden_min, hden_max = 17, -6, 2 #23, -9, 2
+        T_n_bins, T_min, T_max = 51, 3, 8 #71, 2, 8
         #patt = "/u/10/l/lnc2115/vega/data/Ryan/cloudy_out/grid_galquas/emis/z0/g1q1/g1q1_run%i.dat"
         #patt = "/u/10/l/lnc2115/vega/data/Ryan/cloudy_out/test_hden_step/g1q1_run%i.dat"
 
@@ -208,3 +208,20 @@ def _Emission_OVI(field,data):
 	return emission_line*ytEmU
 
 yt.add_field(("gas","Emission_OVI"),units=emission_units,function=_Emission_OVI)
+
+## code from Jason that he's using to find the pixels doing
+## 80% of the absorbing. Can perhaps be used for my own purposes
+## in trying to find the bulk of the emission
+def get_fion_threshold(ion_to_use, coldens_fraction):
+   cut = 0.999
+   total = np.sum(ion_to_use)
+   ratio = 0.01
+   while ratio < coldens_fraction:
+       part = np.sum(ion_to_use[ion_to_use > cut * np.max(ion_to_use)])
+       ratio = part / total
+       cut = cut - 0.01
+
+   threshold = cut * np.max(ion_to_use)
+   number_of_cells_above_threshold = np.size(np.where(ion_to_use > threshold))
+
+   return threshold, number_of_cells_above_threshold
