@@ -126,14 +126,14 @@ class EmissionMap:
         ## it's going to generate two different color bars
         ## it may be better to make a seaborn colorbar for eac
         ## but let's start somewhere
-        #sb_lim = self.instrument[self.mode]['SBlim']
-        #sb_lim = 1./(u.cm**2*u.s*u.steradian)
-        #obs = np.ma.masked_where((frb > sb_lim),frb)
-        #obs_frb = frb*obs.mask
+        sb_lim = self.instrument[self.mode]['SBlim']
+        sb_lim = 1./(u.cm**2*u.s*u.steradian)
+        obs = np.ma.masked_where((frb > sb_lim),frb)
+        obs_frb = frb*obs.mask
 
         plt.imshow(np.log10(frb),extent=(bd1,bd2,bd3,bd4),vmin=-25,vmax=-17,
                    origin='lower',interpolation=None,cmap='bone')
-        #ax.imshow(np.log10(obs_frb),vmin=np.log10(sb_lim),vmax=-14,cmap=self.instrument[self.mode]['cmap'])
+        ax.imshow(np.log10(obs_frb),vmin=np.log10(sb_lim),vmax=-14,cmap=self.instrument[self.mode]['cmap'])
         plt.colorbar()
         plt.savefig(fileout)
         plt.close()
