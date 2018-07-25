@@ -29,9 +29,11 @@ def get_refine_box(ds, zsnap, track):
 fontrc ={'fontname':'Osaka','fontsize':30}
 mpl.rc('text', usetex=True)
 
-baseREF = "/lou/s2m/mpeeples/halo_008508/nref10_refine200kpc_z4to2"
+#baseREF = "/lou/s2m/mpeeples/halo_008508/nref10_refine200kpc_z4to2"
+baseREF = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 fnREF = baseREF+"/"+RD+"/"+RD
-baseNAT = "/lou/s1z/jtumlins/Halos/halo_008508/natural/nref10"
+#baseNAT = "/lou/s1z/jtumlins/Halos/halo_008508/natural/nref10"
+baseNAT = "/Users/dalek/data/Molly/natural/nref11"
 fnNAT = baseNAT+"/"+RD+"/"+RD
 fileout = 'AAS_'+RD+'.pdf'
 
