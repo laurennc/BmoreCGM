@@ -29,12 +29,13 @@ def Stars(pfilter, data):
 add_particle_filter("stars", function=Stars, filtered_type='all',
                     requires=["particle_type"])
 
-#base = "/Users/dalek/data/Molly/natural/nref11"
-base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
-fn = base+"/RD0020/RD0020"
+base = "/Users/dalek/data/Molly/natural/nref11"
+#base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+fn = base+"/RD0027/RD0027"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 lines2 = ['O VI','C IV','C III _977','Si IV','H Alpha']
-track_name = base+"/halo_track"
+#track_name = base+"/halo_track"
+track_name = base+"/halo_track_z2_z1"
 args = fn.split('/')
 
 detect_color_key = {b'nope':'#808080',
@@ -94,7 +95,7 @@ def add_grid(ax):
         return
 
 def create_emission_frbs():
-    dx = np.unique(rb['dx'])[1]
+    dx = np.unique(rb['dx'])[0] #[1]
     #dx = ds.arr(0.1829591205,'kpc').in_units('code_length')
     dxs_list = [0.5,1,5,10]
     dxs_list = [ds.quan(q,'kpc').in_units('code_length') for q in dxs_list]
@@ -1088,5 +1089,5 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
 #create_emission_frbs()
 #make_small_emission_gif_plots()
 #create_phys_emis_weight_frbs()
-#make_emission_gif_plots()
-cdf_plot_loop()
+make_emission_gif_plots()
+#cdf_plot_loop()
