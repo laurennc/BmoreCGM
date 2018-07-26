@@ -459,59 +459,141 @@ def make_radius_array(rb_width,frbarr):
 	nrad = len(radial)
 	return r,xL,dr,nrad,radial
 
-def plot_scatter_points_obscolors(ax,frbarr,r):
-    colors = ['Chartreuse','DarkTurquoise','HotPink','Grey']
+def plot_scatter_points_obscolors(ax,frbarr,r,case=1):
+    #colors = ['Chartreuse','DarkTurquoise','HotPink','Grey']
+    colors = ['#32CD32','#00CED1','#FF69B4','#808080']
     lims = [10,3,2,1,-10]
     rnow = r.flatten()
     frbnow = frbarr.flatten()
     i = 0
     while i < len(lims)-1:
         idr = np.where((frbnow < lims[i]) & (frbnow > lims[i+1]))[0]
-        ax.plot(rnow[idr],frbnow[idr],'.',colors=colors[i],alpha=0.37)
+        if case == 1:
+            if i == 0:
+                ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=0.7,markersize=2)
+            if i == 1:
+                ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=0.25,markersize=1.75)
+            else:
+                ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=0.17,markersize=1.5)
+        elif case == 2:
+            ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=0.35,markersize=5)
+        elif case == 3:
+            ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i])
+        elif case == 4:
+            ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],markersize=1.5,alpha=0.07)
+        else:
+            print 'CASE CAN ONLY BE GIVEN VALUES 1,2,3'
         i = i + 1
     return
 
 def plot_SB_profiles(box_width):
-    natural_base = '_nref11_RD0020_'
-    refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0020_'
+    natural_base = '_nref11_RD0016_'
+    refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0016_'
+    #nref11f_base = '_nref11f_refine200kpc_RD0016_'
     box_size = ds.arr(rb_width,'code_length').in_units('kpc')
-    res_list = [0.2,1,5,10]
+    res_list = [0.2,1.0,5.0,10.0]
     fontrc={'fontname':'Helvetica','fontsize':20}
     mpl.rc('text',usetex=True)
     #rb_width = ds.arr(rb_width,'code_length').in_units('kpc')
     lines = ['CIII_977','OVI']
 
+    case_dict = {'0.2':1,'1.0':2,'5.0':3,'10.0':3}
+
     for line in lines:
         field = 'Emission_'+line
         for index in 'xyz':
-            fig,axes = plt.subplots(2,4)
+            fig,axes = plt.subplots(2,4,sharex=True,sharey=True)
             fig.set_size_inches(12,6)
             iax = 0
             for res in res_list:
                 if res == res_list[0]:
                     fileinNAT = 'frbs/frb'+index+natural_base+field+'_forcedres.cpkl'
                     fileinREF = 'frbs/frb'+index+refined_base+field+'_forcedres.cpkl'
+                    #fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
                 else:
                     fileinNAT = 'frbs/frb'+index+natural_base+field+'_'+str(res)+'kpc.cpkl'
                     fileinREF = 'frbs/frb'+index+refined_base+field+'_'+str(res)+'kpc.cpkl'
+                    #fileinN11 = 'frbs/frb'+index+refined_base+field+'_'+str(res)+'kpc.cpkl'
 
                 frbNAT = cPickle.load(open(fileinNAT,'rb'))
                 frbNAT = np.log10(frbNAT/(1+redshift)**4)
                 frbREF = cPickle.load(open(fileinREF,'rb'))
                 frbREF = np.log10(frbREF/(1+redshift)**4)
+                #frbN11 = cPickle.load(open(fileinN11,'rb'))
+                #frbN11 = np.log10(frbN11/(1+redshift)**4)
 
-                ax = axes[0,iax]
-                r = make_radius_array(box_width,frbREF)
-                plot_scatter_points_obscolors(ax,frbREF,r)
-                ax.set_ylim(-10,6)
                 ax = axes[1,iax]
-                r = make_radius_array(box_width,frbNAT)
-                plot_scatter_points_obscolors(ax,frbNAT,r)
-                ax.set_ylim(-10,6)
+                r,xL,dr,nrad,radial  = make_radius_array(box_width,frbREF)
+                plot_scatter_points_obscolors(ax,frbREF,r,case=case_dict[str(res)])
+                ax.set_ylim(-5,6)
+                ax = axes[0,iax]
+                r,xL,dr,nrad,radial  = make_radius_array(box_width,frbNAT)
+                plot_scatter_points_obscolors(ax,frbNAT,r,case=case_dict[str(res)])
+                ax.set_ylim(-5,6)
+                #ax = axes[2,iax]
+                #r,xL,dr,nrad,radial = make_radius_array(box_width,frbN11)
+                #plot_scatter_points_obscolors(ax,frbN11,r,4) #case=case_dict[str(res)])
+                #ax.set_ylim(-5,6)
                 iax = iax + 1
 
-            plt.savefig('z2_'+index+'_'+field+'_SBradialplot.png')
+            plt.tight_layout()
+            plt.savefig('z3_'+index+'_'+field+'_SBradialplot.png')
     return
+
+
+def plot_SB_profiles_all_lines(box_width):
+    natural_base = '_nref11_RD0016_'
+    refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0016_'
+    #nref11f_base = '_nref11f_refine200kpc_RD0016_'
+    box_size = ds.arr(rb_width,'code_length').in_units('kpc')
+    res_list = [0.2,1.0,5.0,10.0]
+    fontrc={'fontname':'Helvetica','fontsize':20}
+    mpl.rc('text',usetex=True)
+    #rb_width = ds.arr(rb_width,'code_length').in_units('kpc')
+    lines = ['SiIV','CIII_977','CIV','OVI']
+
+    case_dict = {'0.2':1,'1.0':2,'5.0':3,'10.0':3}
+
+    for index in 'xyz':
+        fig,axes = plt.subplots(2,4,sharex=True,sharey=True)
+        fig.set_size_inches(12,6)
+        iax = 0
+        for line in lines:
+            field = 'Emission_'+line
+
+            fileinNAT = 'frbs/frb'+index+natural_base+field+'_forcedres.cpkl'
+            fileinREF = 'frbs/frb'+index+refined_base+field+'_forcedres.cpkl'
+            #fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
+
+            #fileinNAT = 'frbs/frb'+index+natural_base+field+'_'+str(res)+'kpc.cpkl'
+            #fileinREF = 'frbs/frb'+index+refined_base+field+'_'+str(res)+'kpc.cpkl'
+            #fileinN11 = 'frbs/frb'+index+refined_base+field+'_'+str(res)+'kpc.cpkl'
+
+            frbNAT = cPickle.load(open(fileinNAT,'rb'))
+            frbNAT = np.log10(frbNAT/(1+redshift)**4)
+            frbREF = cPickle.load(open(fileinREF,'rb'))
+            frbREF = np.log10(frbREF/(1+redshift)**4)
+            #frbN11 = cPickle.load(open(fileinN11,'rb'))
+            #frbN11 = np.log10(frbN11/(1+redshift)**4)
+
+            ax = axes[1,iax]
+            r,xL,dr,nrad,radial  = make_radius_array(box_width,frbREF)
+            plot_scatter_points_obscolors(ax,frbREF,r,case=1)
+            ax.set_ylim(-5,6)
+            ax = axes[0,iax]
+            r,xL,dr,nrad,radial  = make_radius_array(box_width,frbNAT)
+            plot_scatter_points_obscolors(ax,frbNAT,r,case=1)
+            ax.set_ylim(-5,6)
+            #ax = axes[2,iax]
+            #r,xL,dr,nrad,radial = make_radius_array(box_width,frbN11)
+            #plot_scatter_points_obscolors(ax,frbN11,r,4) #case=case_dict[str(res)])
+            #ax.set_ylim(-5,6)
+            iax = iax + 1
+
+        plt.tight_layout()
+        plt.savefig('z3_'+index+'_LINES_SBradialplot.png')
+    return
+
 
 def make_emis_pdframe(frb,r):
     emis = frb.flatten()
@@ -539,7 +621,7 @@ def holoviews_SB_profiles(box_width):
     renderer = Store.renderers['matplotlib'].instance(fig='pdf', holomap='gif')
     natural_base = '_nref11_RD0016_'
     refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0016_'
-    nref11f_base = '_nref11f_refine200kpc_z4to2_RD0016_'
+    nref11f_base = '_nref11f_refine200kpc_RD0016_'
     box_size = ds.arr(rb_width,'code_length').in_units('kpc')
     res_list = [0.2,1.0,5.0,10.0]
     fontrc={'fontname':'Helvetica','fontsize':20}
@@ -1089,5 +1171,7 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
 #create_emission_frbs()
 #make_small_emission_gif_plots()
 #create_phys_emis_weight_frbs()
-make_emission_gif_plots()
+#make_emission_gif_plots()
 #cdf_plot_loop()
+#holoviews_SB_profiles(box_width)
+plot_SB_profiles_all_lines(box_width)
