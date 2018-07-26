@@ -21,4 +21,4 @@ for line in lines:
       emap = EmissionMap(ds,track,instrument,mode)
       frb = emap.make_frb(line,'x','instruments/emis_RD0016NAT_'+instrument+'_'+mode+'_'+line+'.cpkl')
       frb = frb['gas','Emission_'+line]
-      emap.plot_frb('SiIV',frb,'instruments/emis_RD0016NAT_'+instrument+'_'+mode+'_'+line+'.pdf')
+      emap.plot_frb(line,frb,'instruments/emis_RD0016NAT_'+instrument+'_'+mode+'_'+line+'.pdf')
