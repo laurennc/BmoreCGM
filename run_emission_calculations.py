@@ -31,11 +31,11 @@ add_particle_filter("stars", function=Stars, filtered_type='all',
 
 base = "/Users/dalek/data/Molly/natural/nref11"
 #base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
-fn = base+"/RD0027/RD0027"
+fn = base+"/RD0016/RD0016"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 lines2 = ['O VI','C IV','C III _977','Si IV','H Alpha']
-#track_name = base+"/halo_track"
-track_name = base+"/halo_track_z2_z1"
+track_name = base+"/halo_track"
+#track_name = base+"/halo_track_z2_z1"
 args = fn.split('/')
 
 detect_color_key = {b'nope':'#808080',
@@ -863,7 +863,8 @@ def cumulative_distribution_function(ax,index,line,res,rb_width):
 
     bins = np.linspace(-1.5,3.5,11)
 
-    ls = iter(['-.', '-', '--'])
+    ls = iter(['--', '-', '-'])
+    lw = iter([1.5,3.0,1.5])
     for base in bases:
         if res == 'forced':
             filein = 'frbs/frb'+index+base+field+'_forcedres.cpkl'
@@ -889,14 +890,14 @@ def cumulative_distribution_function(ax,index,line,res,rb_width):
             i = i + 1
 
         label_out = base.split('_')[1]
-        ls_here = ls.next()
-        ax.plot(bins,hist,label=label_out,color=line_color_key[line],linestyle=ls_here,lw=2.0)
+        ls_here,lw_here = ls.next(),lw.next()
+        ax.plot(bins,np.log10(hist),label=label_out,color=line_color_key[line],linestyle=ls_here,lw=lw_here)
         #ax.plot(bins,hist,color=line_color_key[line],marker='s',linestyle=ls_here,lw=1.5)
 
     #ax.set_xlabel('SB')
     #ax.set_ylabel('Pix Fraction')
     ax.set_xlim(-1,3)
-    ax.set_ylim(-0.01,0.31)
+    #ax.set_ylim(-0.01,0.31)
     ax.legend()
     #plt.savefig('SB_cdf_RD0016_'+field+'_forcedres.pdf')
     #plt.close()
@@ -914,7 +915,7 @@ def cdf_plot_loop():
         cumulative_distribution_function(subplts.next(),index,line,'forced',rb_width)
 
     plt.tight_layout()
-    plt.savefig('SB_'+index+'_cdf_RD0016_all_forced.pdf')
+    plt.savefig('SB_'+index+'_cdf_RD0016_all_forced_LOG.pdf')
     plt.close()
     return
 
@@ -1172,6 +1173,5 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
 #make_small_emission_gif_plots()
 #create_phys_emis_weight_frbs()
 #make_emission_gif_plots()
-#cdf_plot_loop()
-#holoviews_SB_profiles(box_width)
-plot_SB_profiles_all_lines(box_width)
+cdf_plot_loop()
+#plot_SB_profiles_all_lines(box_width)
