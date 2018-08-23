@@ -7,6 +7,7 @@ from astropy.table import Table
 from astropy.cosmology import WMAP9 as cosmo
 from emission_functions import *
 from get_refine_box import *
+from matplotlib import colors
 import yt.units as u
 
 # ok so general structure is that I'm going to have to make an FRB
@@ -141,7 +142,61 @@ class EmissionMap:
     return
 
 
-  def plot_frb_talks(self,line,frb,fileout):
+  def plot_frb_talks(self,line,frb,instr,fileout):
+      #fig = plt.figure(figsize=self.instrument[self.mode]['fig_size'])
+      #fig = plt.figure(figsize=(5,5))
+      print instr
+      if instr == 'KCWI':
+          fig = plt.figure(figsize=(2,1.25))
+      if instr == 'MUSE':
+          fig = plt.figure(figsize=(2,2))
+      if instr == 'LLAMAS':
+          fig = plt.figure(figsize=(2,2))
+
+      ax = fig.add_subplot(1,1,1)
+      if self.check_line_in_bandpass(line):
+          lenergy = line_energies[line]
+          frb = frb.to('s**-1*arcsec**-2*cm**-2')*lenergy
+          frb = frb/(1.+self.redshift)**4
+
+          FOVconvert = cosmo.kpc_proper_per_arcmin(self.redshift).value*u.kpc/u.arcmin
+          FOV = (self.instrument[self.mode]['FOV']*FOVconvert).to('kpc')
+          bd1,bd2 = -1*FOV[0]/2.,FOV[0]/2.
+          bd3,bd4 = -1*FOV[1]/2.,FOV[1]/2.
+
+          plt.imshow(np.log10(frb),extent=(bd1,bd2,bd3,bd4),vmin=-27,vmax=-17,
+                     origin='lower',interpolation=None,cmap=self.instrument[self.mode]['cmap'])
+
+          sb_lim = self.instrument[self.mode]['SBlim']
+          obs = np.ma.masked_where((frb > sb_lim),frb)
+          #print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+          #print obs.mask.shape
+          #print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+          if obs.mask.shape:
+              cmap = colors.ListedColormap(['LawnGreen'])
+              bounds=[np.log10(sb_lim),50]
+              norm = colors.BoundaryNorm(bounds, cmap.N)
+              obs_frb = frb*obs.mask
+              ax.imshow(np.log10(obs_frb),extent=(bd1,bd2,bd3,bd4),vmin=np.log10(sb_lim),
+                        vmax=np.log10(sb_lim),cmap=cmap, norm=norm)
+          plt.colorbar()
+          plt.savefig(fileout)
+          plt.close()
+
+          if instr == 'MUSE':
+              fig = plt.figure(figsize=(0.45,0.45))
+              ax = fig.add_subplot(1,1,1)
+              plt.imshow(np.log10(frb),extent=(bd1,bd2,bd3,bd4),vmin=-27,vmax=-17,
+                         origin='lower',interpolation=None,cmap=self.instrument[self.mode]['cmap'])
+              pltname = fileout.split('.')
+              pltname = pltname[0]+'_SMALL.pdf'
+              plt.savefig("")
+              plt.close()
+      else:
+          ax.set_facecolor('gray')
+          plt.savefig(fileout)
+          plt.close()
+
       return
 
   def check_line_in_bandpass(self,line):
