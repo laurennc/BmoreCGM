@@ -187,10 +187,12 @@ def create_phys_emis_weight_frbs():
                     filehden = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_forcedres.cpkl'
                     filetemp = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_forcedres.cpkl'
                     fileion  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_ionfrac_'+field+'_forcedres.cpkl'
+                    filevel  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_vel_'+field+'_forcedres.cpkl'
                 else:
                     filehden = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_'+str(reskpc)+'kpc.cpkl'
                     filetemp = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_'+str(reskpc)+'kpc.cpkl'
                     fileion  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_ionfrac_'+field+'_'+str(reskpc)+'kpc.cpkl'
+                    filevel  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_vel_'+field+'_'+str(reskpc)+'kpc.cpkl'
 
                 obj = ds.proj('H_nuclei_density',index,data_source=rb,weight_field=field)
                 frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
@@ -203,6 +205,12 @@ def create_phys_emis_weight_frbs():
                 obj = ds.proj(('gas',ion_field),index,data_source=rb,weight_field=field)
                 frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
                 cPickle.dump(frb[('gas',ion_field)],open(fileion,'wb'),protocol=-1)
+
+                bv = rb.quantities["BulkVelocity"]()
+                rb.set_field_parameter("bulk_velocity",bv)
+                obj = ds.proj(('gas','relative_velocity_'+index),index,data_source=rb,weight_field=field)
+                frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
+                cPickle.dump(frb[('gas','relative_velocity_'+index)].to('km/s').value,open(filevel,'wb'),protocol=-1)
     return
 
 def plot_ytProjections():
@@ -1171,7 +1179,7 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
 #make_ionfrac_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
 #create_emission_frbs()
 #make_small_emission_gif_plots()
-#create_phys_emis_weight_frbs()
+create_phys_emis_weight_frbs()
 #make_emission_gif_plots()
-cdf_plot_loop()
+#cdf_plot_loop()
 #plot_SB_profiles_all_lines(box_width)
