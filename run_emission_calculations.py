@@ -897,7 +897,7 @@ def cumulative_distribution_function(ax,index,line,res,rb_width):
     #ax.set_xlabel('SB')
     #ax.set_ylabel('Pix Fraction')
     ax.set_xlim(-1,3)
-    #ax.set_ylim(-0.01,0.31)
+    ax.set_ylim(-5.5,-0.5)
     ax.legend()
     #plt.savefig('SB_cdf_RD0016_'+field+'_forcedres.pdf')
     #plt.close()
