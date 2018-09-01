@@ -4,7 +4,7 @@ import yt
 import yt.units as u
 #import builtins
 
-patt = "/Users/dalek/data/cloudy_data/emissivity_tables/bertone_z1/bertone_run%i.dat"
+patt = "/Users/dalek/data/cloudy_data/emissivity_tables/bertone_z3/bertone_run%i.dat"
 
 def get_refine_box(ds, zsnap, track):
     ## find closest output, modulo not updating before printout

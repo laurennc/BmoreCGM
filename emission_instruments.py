@@ -147,11 +147,11 @@ class EmissionMap:
       #fig = plt.figure(figsize=(5,5))
       print instr
       if instr == 'KCWI':
-          fig = plt.figure(figsize=(2,1.25))
+          fig = plt.figure(figsize=(6.47,4))
       if instr == 'MUSE':
-          fig = plt.figure(figsize=(2,2))
+          fig = plt.figure(figsize=(4,4))
       if instr == 'LLAMAS':
-          fig = plt.figure(figsize=(2,2))
+          fig = plt.figure(figsize=(4,4))
 
       ax = fig.add_subplot(1,1,1)
       if self.check_line_in_bandpass(line):
@@ -184,13 +184,13 @@ class EmissionMap:
           plt.close()
 
           if instr == 'MUSE':
-              fig = plt.figure(figsize=(0.45,0.45))
+              fig = plt.figure(figsize=(1.47,1.47))
               ax = fig.add_subplot(1,1,1)
               plt.imshow(np.log10(frb),extent=(bd1,bd2,bd3,bd4),vmin=-27,vmax=-17,
                          origin='lower',interpolation=None,cmap=self.instrument[self.mode]['cmap'])
               pltname = fileout.split('.')
               pltname = pltname[0]+'_SMALL.pdf'
-              plt.savefig("")
+              plt.savefig(pltname)
               plt.close()
       else:
           ax.set_facecolor('gray')
