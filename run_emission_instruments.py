@@ -15,8 +15,12 @@ lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 #lines = ['HAlpha']
 
 for line in lines:
-  for instrument in instr_dict.keys():
-    inst = instr_dict[instrument]
+  #for instrument in instr_dict.keys():
+    #inst = instr_dict[instrument]
+    instrument = 'MUSE'
+    inst = instr_dict['MUSE']
+    #instrument = 'KCWI'
+    #inst = instr_dict['KCWI']
     for mode in inst.keys():
       emap = EmissionMap(ds,track,instrument,mode)
       frb = emap.make_frb(line,'z','instruments/emis_z_RD0016REF_'+instrument+'_'+mode+'_'+line+'.cpkl')
