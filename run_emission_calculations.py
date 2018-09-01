@@ -9,7 +9,7 @@ import trident
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
-from consistency import *
+#from consistency import *
 from yt.data_objects.particle_filters import add_particle_filter
 
 from matplotlib.colorbar import Colorbar
@@ -17,20 +17,20 @@ from emission_functions import *
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from astropy.cosmology import WMAP9 as cosmo
 
-import holoviews as hv
-import pandas as pd
-import datashader as dshade
-from holoviews.operation.datashader import datashade, aggregate
-from holoviews import Store
-hv.extension('matplotlib')
+#import holoviews as hv
+#import pandas as pd
+#import datashader as dshade
+#from holoviews.operation.datashader import datashade, aggregate
+#from holoviews import Store
+#hv.extension('matplotlib')
 
 def Stars(pfilter, data):
       return data[("all", "particle_type")] == 2
 add_particle_filter("stars", function=Stars, filtered_type='all',
                     requires=["particle_type"])
 
-base = "/Users/dalek/data/Molly/natural/nref11"
-#base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+#base = "/Users/dalek/data/Molly/natural/nref11"
+base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 fn = base+"/RD0016/RD0016"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 lines2 = ['O VI','C IV','C III _977','Si IV','H Alpha']
@@ -66,12 +66,12 @@ fontcs ={'fontname':'Helvetica','fontsize':16}
 #mpl.rc('text', usetex=True)
 
 ### Fancy seaborn colormaps!! ###
-sns.set_style("white", {'axes.grid' : False})
-colors1 = plt.cm.Greys(np.linspace(0., 0.8, 192))
-sns_cmap2 = sns.blend_palette(('Pink','DeepPink','#1E90FF','DarkTurquoise','#50A638'), n_colors=40,as_cmap=True)
-colors2 = sns_cmap2(np.linspace(0.,1,64))
-colors = np.vstack((colors1, colors2))
-mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
+#sns.set_style("white", {'axes.grid' : False})
+#colors1 = plt.cm.Greys(np.linspace(0., 0.8, 192))
+#sns_cmap2 = sns.blend_palette(('Pink','DeepPink','#1E90FF','DarkTurquoise','#50A638'), n_colors=40,as_cmap=True)
+#colors2 = sns_cmap2(np.linspace(0.,1,64))
+#colors = np.vstack((colors1, colors2))
+#mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
 
 
 ds = yt.load(fn)
@@ -552,7 +552,7 @@ def plot_SB_profiles(box_width):
 def plot_SB_profiles_all_lines(box_width):
     natural_base = '_nref11_RD0016_'
     refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0016_'
-    #nref11f_base = '_nref11f_refine200kpc_RD0016_'
+    nref11f_base = '_nref11f_refine200kpc_RD0016_'
     box_size = ds.arr(rb_width,'code_length').in_units('kpc')
     res_list = [0.2,1.0,5.0,10.0]
     fontrc={'fontname':'Helvetica','fontsize':20}
@@ -563,15 +563,17 @@ def plot_SB_profiles_all_lines(box_width):
     case_dict = {'0.2':1,'1.0':2,'5.0':3,'10.0':3}
 
     for index in 'xyz':
-        fig,axes = plt.subplots(2,4,sharex=True,sharey=True)
-        fig.set_size_inches(12,6)
+        #fig,axes = plt.subplots(2,4,sharex=True,sharey=True)
+        #fig.set_size_inches(12,6)
+        fig,axes = plt.subplots(3,4,sharex=True,sharey=True)
+        fig.set_size_inches(12,9)
         iax = 0
         for line in lines:
             field = 'Emission_'+line
 
             fileinNAT = 'frbs/frb'+index+natural_base+field+'_forcedres.cpkl'
             fileinREF = 'frbs/frb'+index+refined_base+field+'_forcedres.cpkl'
-            #fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
+            fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
 
             #fileinNAT = 'frbs/frb'+index+natural_base+field+'_'+str(res)+'kpc.cpkl'
             #fileinREF = 'frbs/frb'+index+refined_base+field+'_'+str(res)+'kpc.cpkl'
@@ -581,8 +583,8 @@ def plot_SB_profiles_all_lines(box_width):
             frbNAT = np.log10(frbNAT/(1+redshift)**4)
             frbREF = cPickle.load(open(fileinREF,'rb'))
             frbREF = np.log10(frbREF/(1+redshift)**4)
-            #frbN11 = cPickle.load(open(fileinN11,'rb'))
-            #frbN11 = np.log10(frbN11/(1+redshift)**4)
+            frbN11 = cPickle.load(open(fileinN11,'rb'))
+            frbN11 = np.log10(frbN11/(1+redshift)**4)
 
             ax = axes[1,iax]
             r,xL,dr,nrad,radial  = make_radius_array(box_width,frbREF)
@@ -592,14 +594,14 @@ def plot_SB_profiles_all_lines(box_width):
             r,xL,dr,nrad,radial  = make_radius_array(box_width,frbNAT)
             plot_scatter_points_obscolors(ax,frbNAT,r,case=1)
             ax.set_ylim(-5,6)
-            #ax = axes[2,iax]
-            #r,xL,dr,nrad,radial = make_radius_array(box_width,frbN11)
-            #plot_scatter_points_obscolors(ax,frbN11,r,4) #case=case_dict[str(res)])
-            #ax.set_ylim(-5,6)
+            ax = axes[2,iax]
+            r,xL,dr,nrad,radial = make_radius_array(box_width,frbN11)
+            plot_scatter_points_obscolors(ax,frbN11,r,4) #case=case_dict[str(res)])
+            ax.set_ylim(-5,6)
             iax = iax + 1
 
         plt.tight_layout()
-        plt.savefig('z3_'+index+'_LINES_SBradialplot.png')
+        plt.savefig('z3_'+index+'_LINES_SBradialplot_ALLSIMS.png')
     return
 
 
@@ -861,7 +863,7 @@ def covering_fraction_by_radius(rb_width,SB_cutoff=1.):
 
     return
 
-def cumulative_distribution_function(ax,index,line,res,rb_width):
+def cumulative_distribution_function(ax,line,res,rb_width):
     field = 'Emission_'+line
     bases = ['_nref11_RD0016_','_nref11n_nref10f_refine200kpc_z4to2_RD0016_','_nref11f_refine200kpc_RD0016_']
     #colors = ['3 colors here!']
@@ -873,29 +875,41 @@ def cumulative_distribution_function(ax,index,line,res,rb_width):
 
     ls = iter(['--', '-', '-'])
     lw = iter([1.5,3.0,1.5])
+    indices = 'xyz'
+
+    hist = np.zeros(len(bins))
+    tot_pix = 0
+    pix_hist = np.zeros(len(bins))
+
+
     for base in bases:
-        if res == 'forced':
-            filein = 'frbs/frb'+index+base+field+'_forcedres.cpkl'
-        else:
-            filein = 'frbs/frb'+index+base+field+'_'+str(res)+'kpc.cpkl'
-
-        frb = cPickle.load(open(filein,'rb'))
-        frb = np.log10(frb/(1.+redshift)**4)
-        frb = frb.flatten()
-
-        hist = np.zeros(len(bins))
-        i = 0
-        while i < len(bins):
-            if i == 0:
-                num_pix = np.where(frb < bins[i])[0]
-                hist[i] = float(len(num_pix))/len(frb)
-            elif i == len(bins)-1:
-                num_pix = np.where(frb >= bins[i])[0]
-                hist[i] = float(len(num_pix))/len(frb)
+        for index in indices:
+            if res == 'forced':
+                filein = 'frbs/frb'+index+base+field+'_forcedres.cpkl'
             else:
-                num_pix = np.where((frb < bins[i+1]) & (frb >= bins[i]))[0]
-                hist[i] = float(len(num_pix))/len(frb)
-            i = i + 1
+                filein = 'frbs/frb'+index+base+field+'_'+str(res)+'kpc.cpkl'
+
+            frb = cPickle.load(open(filein,'rb'))
+            frb = np.log10(frb/(1.+redshift)**4)
+            frb = frb.flatten()
+            tot_pix += len(frb)
+
+            i = 0
+            while i < len(bins):
+                if i == 0:
+                    num_pix = np.where(frb < bins[i])[0]
+                    pix_hist[i] += len(num_pix)
+                elif i == len(bins)-1:
+                    num_pix = np.where(frb >= bins[i])[0]
+                    pix_hist[i] += len(num_pix)
+                else:
+                    num_pix = np.where((frb < bins[i+1]) & (frb >= bins[i]))[0]
+                    #hist[i] = float(len(num_pix))/len(frb)
+                    pix_hist[i] += len(num_pix)
+                i = i + 1
+
+        for i in range(len(hist)):
+            hist[i] = float(pix_hist[i]/tot_pix)
 
         label_out = base.split('_')[1]
         ls_here,lw_here = ls.next(),lw.next()
@@ -918,12 +932,12 @@ def cdf_plot_loop():
     ax = ax.flatten()
     subplts = iter(ax)
     lines = ['OVI','CIV','CIII_977','SiIV']
-    index = 'z'
     for line in lines:
-        cumulative_distribution_function(subplts.next(),index,line,'forced',rb_width)
+        cumulative_distribution_function(subplts.next(),line,'forced',rb_width)
 
     plt.tight_layout()
-    plt.savefig('SB_'+index+'_cdf_RD0016_all_forced_LOG.pdf')
+    #plt.savefig('SB_'+index+'_cdf_RD0016_all_forced_LOG.pdf')
+    plt.savefig('SB_all_coverfrac_RD0016_forced_LOG.pdf')
     plt.close()
     return
 
@@ -1123,6 +1137,7 @@ def hden_temp_ionfrac_hist(index,base,RD,line,resolution,redshift):
 
     return hist,avgvals,maxvals #,averages
 
+ion_lims = {'OVI':(0.,0.2),'CIV':(0.,0.25)}
 def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
     ds = yt.load(fn)
     #lines = ['CIII_977']
@@ -1136,9 +1151,12 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
         # --------------------------------------------------------
         ax1 = plt.subplot(gs[1,0])
         # --------------------------------------------------------
-        plt1 = ax1.imshow(avgvals.T,extent=[-6,1,3.5,6.5],
+        if line in ion_lims.keys():
+            plt1 = ax1.imshow(avgvals.T,extent=[-6,1,3.5,6.5],vmin=ion_lims[line][0],vmax=ion_lims[line][1],
                           interpolation='nearest',origin='lower',cmap='Purples')#mymap,vmin=-5,vmax=3)
-
+        else:
+            plt1 = ax1.imshow(avgvals.T,extent=[-6,1,3.5,6.5],
+                          interpolation='nearest',origin='lower',cmap='Purples')
         add_grid(ax1)
         ax1.set_xlim([-6,1])
         ax1.set_ylim([3.5,6.5])
@@ -1174,12 +1192,12 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
 
 
 #make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
-#make_weighted_phase_diagrams('x','_nref11_','RD0020','forcedres',ds.current_redshift)
+#make_weighted_phase_diagrams('x','_nref11_','RD0016','forcedres',ds.current_redshift)
 #make_ionfrac_weighted_phase_diagrams('x','_nref11_','RD0020','forcedres',ds.current_redshift)
 #make_ionfrac_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
 #create_emission_frbs()
 #make_small_emission_gif_plots()
-create_phys_emis_weight_frbs()
+#create_phys_emis_weight_frbs()
 #make_emission_gif_plots()
-#cdf_plot_loop()
+cdf_plot_loop()
 #plot_SB_profiles_all_lines(box_width)
