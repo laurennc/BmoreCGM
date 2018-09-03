@@ -5,7 +5,7 @@ from astropy.table import Table
 import cPickle
 import matplotlib as mpl
 import trident
-#import seaborn as sns
+import seaborn as sns
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
@@ -66,12 +66,12 @@ fontcs ={'fontname':'Helvetica','fontsize':16}
 #mpl.rc('text', usetex=True)
 
 ### Fancy seaborn colormaps!! ###
-#sns.set_style("white", {'axes.grid' : False})
-#colors1 = plt.cm.Greys(np.linspace(0., 0.8, 192))
-#sns_cmap2 = sns.blend_palette(('Pink','DeepPink','#1E90FF','DarkTurquoise','#50A638'), n_colors=40,as_cmap=True)
-#colors2 = sns_cmap2(np.linspace(0.,1,64))
-#colors = np.vstack((colors1, colors2))
-#mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
+sns.set_style("white", {'axes.grid' : False})
+colors1 = plt.cm.Greys(np.linspace(0., 0.8, 192))
+sns_cmap2 = sns.blend_palette(('Pink','DeepPink','#1E90FF','DarkTurquoise','#50A638'), n_colors=40,as_cmap=True)
+colors2 = sns_cmap2(np.linspace(0.,1,64))
+colors = np.vstack((colors1, colors2))
+mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
 
 
 ds = yt.load(fn)
@@ -309,7 +309,12 @@ def make_small_emission_gif_plots():
     nref11f_base = '_nref11f_refine200kpc_RD0016_'
     box_size = ds.arr(rb_width,'code_length').in_units('kpc')
     box_size = np.ceil(box_size/2.)
-    res_list = [0.2,0.5,1.0,5.0,10.0]
+
+    #forced68 = ds.quan(6.86096673e-02,'kpc')
+    #forced137 = ds.quan(1.37219335e-01,'kpc')
+    res_list = [0.137,0.5,1.0,5.0,10.0]
+    #res_list = [0.2,0.5,1.0,5.0,10.0]
+
     fontrc ={'fontname':'Helvetica','fontsize':20}
     mpl.rc('text', usetex=True)
     make_obs = True
@@ -329,7 +334,8 @@ def make_small_emission_gif_plots():
                     fileinNAT = 'frbs/frb'+index+natural_base+field+'_forcedres.cpkl'
                     fileinREF = 'frbs/frb'+index+refined_base+field+'_forcedres.cpkl'
                     fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
-                    pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*0.182959,2)
+                    pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*0.2,2)
+                    #pixsize2 = round(cosmo.arcsec_per_kpc_proper(redshift).value*forced68.value,2)
                 else:
                     fileinNAT = 'frbs/frb'+index+natural_base+field+'_'+str(res)+'kpc.cpkl'
                     fileinREF = 'frbs/frb'+index+refined_base+field+'_'+str(res)+'kpc.cpkl'
@@ -362,6 +368,14 @@ def make_small_emission_gif_plots():
                 icL1,icL2 = icL-num_pix,icL+num_pix
                 icR1,icR2 = icR-num_pix,icR+num_pix
 
+                if res == res_list[0]:
+                    res = 0.068 #kpc forced68.value
+                    num_pix = int(np.ceil(bsR/res))
+                    icL,icR = np.unravel_index(frbN11.argmax(),frbN11.shape)
+                    icL1,icL2 = icL-num_pix,icL+num_pix
+                    icR1,icR2 = icR-num_pix,icR+num_pix
+                    res = 'forced'
+
                 fig,ax = plt.subplots(1,3)
                 fig.set_size_inches(14,6)
 
@@ -391,7 +405,7 @@ def make_small_emission_gif_plots():
                 else:
                     lineout = line
                 fig.suptitle('z=3, '+lineout+', '+str(res)+'kpc'+', '+str(pixsize)+'"',**fontrc)
-                plt.savefig('z3_'+index+'_'+field+'_'+str(res)+'kpc_SBdim_obscol_ZOOM20kpc.pdf')
+                plt.savefig('z3_'+index+'_'+field+'_'+str(res)+'kpc_SBdim_obscol_ZOOM20kpc_pixelsfixed.pdf')
                 plt.close()
 
     return
@@ -1196,8 +1210,9 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
 #make_ionfrac_weighted_phase_diagrams('x','_nref11_','RD0020','forcedres',ds.current_redshift)
 #make_ionfrac_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
 #create_emission_frbs()
-#make_small_emission_gif_plots()
+#make_emission_gif_plots()
+make_small_emission_gif_plots()
 #create_phys_emis_weight_frbs()
 #make_emission_gif_plots()
-cdf_plot_loop()
+#cdf_plot_loop()
 #plot_SB_profiles_all_lines(box_width)
