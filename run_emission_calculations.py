@@ -470,6 +470,73 @@ def make_phys_gif_plots():
                         plt.close()
     return
 
+def make_velocity_emisweighted_gif_plots():
+    natural_base = '_nref11_RD0016_'
+    refined_base = '_nref11n_nref10f_refine200kpc_z4to2_RD0016_'
+    nref11f_base = '_nref11f_refine200kpc_RD0016_'
+    box_size = ds.arr(rb_width,'code_length').in_units('kpc')
+    box_size = np.ceil(box_size/2.)
+    res_list = [0.2,0.5,1.0,5.0,10.0]
+    fontrc ={'fontname':'Helvetica','fontsize':20}
+    mpl.rc('text', usetex=True)
+    make_obs = True
+
+    cmap = 'viridis' ## pick something better here!
+
+    for line in lines:
+        field = 'Emission_'+line
+        for index in 'xyz':
+            for res in res_list:
+                if res == res_list[0]:
+                    fileinNAT = 'frbs/frb'+index+natural_base+'vel_'+field+'_forcedres.cpkl'
+                    fileinREF = 'frbs/frb'+index+refined_base+'vel_'+field+'_forcedres.cpkl'
+                    fileinN11 = 'frbs/frb'+index+nref11f_base+'vel_'+field+'_forcedres.cpkl'
+                    pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*0.182959,2)
+                else:
+                    fileinNAT = 'frbs/frb'+index+natural_base+'vel_'+field+'_'+str(res)+'kpc.cpkl'
+                    fileinREF = 'frbs/frb'+index+refined_base+'vel_'+field+'_'+str(res)+'kpc.cpkl'
+                    fileinN11 = 'frbs/frb'+index+nref11f_base+'vel_'+field+'_'+str(res)+'kpc.cpkl'
+                    pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*res,2)
+
+                frbNAT = cPickle.load(open(fileinNAT,'rb'))
+                frbREF = cPickle.load(open(fileinREF,'rb'))
+                frbN11 = cPickle.load(open(fileinN11,'rb'))
+
+                bsL,bsR = -1*box_size.value,box_size.value
+
+                fig,ax = plt.subplots(1,3)
+                fig.set_size_inches(14,6)
+
+                ax[0].imshow(frbNAT,cmap=cmap,#vmin=-5,vmax=3,
+                             extent=(bsL,bsR,bsR,bsL),origin='lower',
+                             interpolation=None)
+
+                ax[1].imshow(frbREF,cmap=cmap,#vmin=-5,vmax=3,
+                             extent=(bsL,bsR,bsR,bsL),origin='lower',
+                             interpolation=None)
+
+                im2 = ax[2].imshow(frbN11,cmap=cmap,#vmin=-5,vmax=3,
+                             extent=(bsL,bsR,bsR,bsL),origin='lower',
+                             interpolation=None)
+
+                axins = inset_axes(ax[2],width="5%", height="100%",loc=3,
+                                   bbox_to_anchor=(1.07, 0.0, 1, 1),
+                                   bbox_transform=ax[2].transAxes,borderpad=0)
+
+                ax[0].set_title('Natural',**fontrc)
+                ax[1].set_title('Forced Refine 10',**fontrc)
+                ax[2].set_title('Forced Refine 11',**fontrc)
+                cb = fig.colorbar(im2, cax=axins)#,label=r'log( photons s$^{-1}$ cm$^{-2}$ sr$^{-1}$)')
+                if line == 'CIII_977':
+                    lineout = 'CIII 977'
+                else:
+                    lineout = line
+                #fig.suptitle('z=3, '+lineout+', '+str(res)+'kpc'+', '+str(pixsize)+'"',**fontrc)
+                plt.savefig('z3_'+index+'_velocity_'+field+'_'+str(res)+'kpc_SBdim_obscol.pdf')
+                plt.close()
+
+    return
+
 def make_radius_array(rb_width,frbarr):
 	box_size = rb_width/2.
 	num_cells = frbarr.shape[0]
