@@ -491,10 +491,12 @@ def plot_scatter_points_obscolors(ax,frbarr,r,case=1):
     while i < len(lims)-1:
         idr = np.where((frbnow < lims[i]) & (frbnow > lims[i+1]))[0]
         if case == 1:
-            if i == 0:
-                ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=0.7,markersize=2)
+            if i == 0: #[0.7,0.25,0.17]
+                ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=1,markersize=5)
             if i == 1:
-                ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=0.25,markersize=1.75)
+                ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=0.75,markersize=3)
+            if i ==2:
+                ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=0.5,markersize=2.5)
             else:
                 ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=0.17,markersize=1.5)
         elif case == 2:
@@ -503,8 +505,17 @@ def plot_scatter_points_obscolors(ax,frbarr,r,case=1):
             ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i])
         elif case == 4:
             ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],markersize=1.5,alpha=0.07)
+        elif case == 5:
+            if i == 0: #[0.7,0.25,0.17]
+                ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=1,markersize=5)
+            if i == 1:
+                ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=0.75,markersize=3)
+            if i ==2:
+                ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=0.5,markersize=2.5)
+            else:
+                ax.plot(rnow[idr],frbnow[idr],'.',color=colors[i],alpha=0.07,markersize=0.3)
         else:
-            print 'CASE CAN ONLY BE GIVEN VALUES 1,2,3'
+            print 'CASE CAN ONLY BE GIVEN VALUES 1,2,3,4'
         i = i + 1
     return
 
@@ -604,14 +615,17 @@ def plot_SB_profiles_all_lines(box_width):
             r,xL,dr,nrad,radial  = make_radius_array(box_width,frbREF)
             plot_scatter_points_obscolors(ax,frbREF,r,case=1)
             ax.set_ylim(-5,6)
+            #ax.set_ylim(-2,6)
             ax = axes[0,iax]
             r,xL,dr,nrad,radial  = make_radius_array(box_width,frbNAT)
             plot_scatter_points_obscolors(ax,frbNAT,r,case=1)
             ax.set_ylim(-5,6)
+            #ax.set_ylim(-2,6)
             ax = axes[2,iax]
             r,xL,dr,nrad,radial = make_radius_array(box_width,frbN11)
-            plot_scatter_points_obscolors(ax,frbN11,r,4) #case=case_dict[str(res)])
+            plot_scatter_points_obscolors(ax,frbN11,r,case=5) #case=case_dict[str(res)])
             ax.set_ylim(-5,6)
+            #ax.set_ylim(-2,6)
             iax = iax + 1
 
         plt.tight_layout()
@@ -1211,8 +1225,8 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
 #make_ionfrac_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
 #create_emission_frbs()
 #make_emission_gif_plots()
-make_small_emission_gif_plots()
+#make_small_emission_gif_plots()
 #create_phys_emis_weight_frbs()
 #make_emission_gif_plots()
 #cdf_plot_loop()
-#plot_SB_profiles_all_lines(box_width)
+plot_SB_profiles_all_lines(box_width)
