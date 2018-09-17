@@ -596,15 +596,15 @@ def make_small_velocity_emisweighted_gif_plots():
                 fig.set_size_inches(14,6)
 
 
-                ax[0].imshow(frbNAT[iL:iR+1,iL:iR+1],cmap=cmap,vmin=-5,vmax=3,
+                ax[0].imshow(frbNAT[iL:iR+1,iL:iR+1],cmap=cmap,vmin=-200,vmax=200,
                              extent=(bsL,bsR,bsR,bsL),origin='lower',
                              interpolation=None)
 
-                ax[1].imshow(frbREF[icA1:icA2+1,icB1:icB2+1],cmap=cmap,vmin=-5,vmax=3,
+                ax[1].imshow(frbREF[icA1:icA2+1,icB1:icB2+1],cmap=cmap,vmin=-200,vmax=200,
                              extent=(bsL,bsR,bsR,bsL),origin='lower',
                              interpolation=None)
 
-                im2 = ax[2].imshow(frbN11[icL1:icL2+1,icR1:icR2+1],cmap=cmap,vmin=-5,vmax=3,
+                im2 = ax[2].imshow(frbN11[icL1:icL2+1,icR1:icR2+1],cmap=cmap,vmin=-200,vmax=200,
                              extent=(bsL,bsR,bsR,bsL),origin='lower',
                              interpolation=None)
 
@@ -615,7 +615,7 @@ def make_small_velocity_emisweighted_gif_plots():
                 ax[0].set_title('Natural',**fontrc)
                 ax[1].set_title('Forced Refine 10',**fontrc)
                 ax[2].set_title('Forced Refine 11',**fontrc)
-                cb = fig.colorbar(im2, cax=axins,label=r'log( photons s$^{-1}$ cm$^{-2}$ sr$^{-1}$)')
+                cb = fig.colorbar(im2, cax=axins,label='Velocity')
                 if line == 'CIII_977':
                     lineout = 'CIII 977'
                 else:
