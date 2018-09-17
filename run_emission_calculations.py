@@ -561,6 +561,11 @@ def make_small_velocity_emisweighted_gif_plots():
                     fileinREF = 'frbs/frb'+index+refined_base+'vel_'+field+'_forcedres.cpkl'
                     fileinN11 = '/Users/dalek/Desktop/current_nref11f_frbs/frb'+index+nref11f_base+'vel_'+field+'_forcedres.cpkl'
                     pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*0.182959,2)
+
+                    fileinNAT_EMIS = 'frbs/frb'+index+natural_base+field+'_forcedres.cpkl'
+                    fileinREF_EMIS = 'frbs/frb'+index+refined_base+field+'_forcedres.cpkl'
+                    fileinN11_EMIS = 'frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
+
                 else:
                     fileinNAT = 'frbs/frb'+index+natural_base+'vel_'+field+'_'+str(res)+'kpc.cpkl'
                     fileinREF = 'frbs/frb'+index+refined_base+'vel_'+field+'_'+str(res)+'kpc.cpkl'
@@ -571,23 +576,31 @@ def make_small_velocity_emisweighted_gif_plots():
                 frbREF = cPickle.load(open(fileinREF,'rb'))
                 frbN11 = cPickle.load(open(fileinN11,'rb'))
 
+                frbNAT_EMIS = cPickle.load(open(fileinNAT_EMIS,'rb'))
+                frbREF_EMIS = cPickle.load(open(fileinREF_EMIS,'rb'))
+                frbN11_EMIS = cPickle.load(open(fileinN11_EMIS,'rb'))
+
+                frbNAT_EMIS = np.log10(frbNAT_EMIS/(1.+redshift)**4)
+                frbREF_EMIS = np.log10(frbREF_EMIS/(1.+redshift)**4)
+                frbN11_EMIS = np.log10(frbN11_EMIS/(1.+redshift)**4)
+
                 bsL,bsR = -20.,20.
                 num_pix = int(np.ceil(bsR/res))
                 box_center = int(np.ceil(frbNAT.shape[0]/2.))
                 iL,iR = box_center-num_pix,box_center+num_pix
 
-                icA,icB = np.unravel_index(frbREF.argmax(),frbREF.shape)
+                icA,icB = np.unravel_index(frbREF_EMIS.argmax(),frbREF_EMIS.shape)
                 icA1,icA2 = icA-num_pix,icA+num_pix
                 icB1,icB2 = icB-num_pix,icB+num_pix
 
-                icL,icR = np.unravel_index(frbN11.argmax(),frbN11.shape)
+                icL,icR = np.unravel_index(frbN11_EMIS.argmax(),frbN11_EMIS.shape)
                 icL1,icL2 = icL-num_pix,icL+num_pix
                 icR1,icR2 = icR-num_pix,icR+num_pix
 
                 if res == res_list[0]:
                     res = 0.068 #kpc forced68.value
                     num_pix = int(np.ceil(bsR/res))
-                    icL,icR = np.unravel_index(frbN11.argmax(),frbN11.shape)
+                    icL,icR = np.unravel_index(frbN11_EMIS.argmax(),frbN11_EMIS.shape)
                     icL1,icL2 = icL-num_pix,icL+num_pix
                     icR1,icR2 = icR-num_pix,icR+num_pix
                     res = 'forced'
