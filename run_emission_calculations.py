@@ -11,6 +11,7 @@ import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 #from consistency import *
 from yt.data_objects.particle_filters import add_particle_filter
+from get_halo_center import *
 
 from matplotlib.colorbar import Colorbar
 from emission_functions import *
@@ -31,11 +32,12 @@ add_particle_filter("stars", function=Stars, filtered_type='all',
 
 #base = "/Users/dalek/data/Molly/natural/nref11"
 base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+#base = "/Volumes/sonic/halo_008508/nref11n/nref11f"
 fn = base+"/RD0016/RD0016"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 lines2 = ['O VI','C IV','C III _977','Si IV','H Alpha']
 track_name = base+"/halo_track"
-#track_name = base+"/halo_track_z2_z1"
+#track_name = base2+"/halo_track"
 args = fn.split('/')
 
 detect_color_key = {b'nope':'#808080',
@@ -164,6 +166,18 @@ def create_phys_emis_weight_frbs():
     res_list = np.append(dx,dxs_list)
     res_list = ds.arr(res_list,'code_length')
 
+    bv = rb.quantities["BulkVelocity"]()
+    print "Box Bulk: ",bv
+    rb.set_field_parameter("bulk_velocity",bv)
+    tosscenter,bv = get_halo_center(ds,rb_center)
+    bv = [bv[0].value,bv[1].value,bv[2].value]
+    bv = ds.arr(bv,'code_velocity').to('cm/s')
+    print "Halo Bulk: ",bv
+    rb.set_field_parameter("bulk_velocity",bv)
+
+    ## for now to make things faster!!
+    res_list = [res_list[0]]
+
     for line in lines2:
         field = 'Emission_'+line.replace(' ','')
         line_elements = line.split(' ')
@@ -176,7 +190,8 @@ def create_phys_emis_weight_frbs():
             trident.add_ion_fields(ds,ions=['H I'])
             ion_field = 'H_p0_ion_fraction'
         print line
-        for index in 'xyz':
+        #for index in 'xyz':
+        for index in 'z':
             print index
             for res in res_list:
                 reskpc = round(res.in_units('kpc'),2)
@@ -184,30 +199,29 @@ def create_phys_emis_weight_frbs():
                 num_cells = int(np.ceil(rb_width/res).value)
 
                 if res == res_list[0]:
-                    filehden = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_forcedres.cpkl'
-                    filetemp = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_forcedres.cpkl'
-                    fileion  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_ionfrac_'+field+'_forcedres.cpkl'
-                    filevel  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_vel_'+field+'_forcedres.cpkl'
-                else:
-                    filehden = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_'+str(reskpc)+'kpc.cpkl'
-                    filetemp = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_'+str(reskpc)+'kpc.cpkl'
-                    fileion  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_ionfrac_'+field+'_'+str(reskpc)+'kpc.cpkl'
-                    filevel  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_vel_'+field+'_'+str(reskpc)+'kpc.cpkl'
+                    #filehden = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_forcedres.cpkl'
+                    #filetemp = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_forcedres.cpkl'
+                    #fileion  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_ionfrac_'+field+'_forcedres.cpkl'
+                    filevel  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_vel_'+field+'_forcedresGHCTEST.cpkl'
+                #else:
+                #    filehden = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_hden_'+field+'_'+str(reskpc)+'kpc.cpkl'
+                #    filetemp = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_temp_'+field+'_'+str(reskpc)+'kpc.cpkl'
+                #    fileion  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_ionfrac_'+field+'_'+str(reskpc)+'kpc.cpkl'
+                #    filevel  = 'frb'+index+'_'+args[-3]+'_'+args[-2]+'_vel_'+field+'_'+str(reskpc)+'kpc.cpkl'
 
-                obj = ds.proj('H_nuclei_density',index,data_source=rb,weight_field=field)
-                frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
-                cPickle.dump(frb['H_nuclei_density'],open(filehden,'wb'),protocol=-1)
+                #obj = ds.proj('H_nuclei_density',index,data_source=rb,weight_field=field)
+                #frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
+                #cPickle.dump(frb['H_nuclei_density'],open(filehden,'wb'),protocol=-1)
 
-                obj = ds.proj('temperature',index,data_source=rb,weight_field=field)
-                frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
-                cPickle.dump(frb['temperature'],open(filetemp,'wb'),protocol=-1)
+                #obj = ds.proj('temperature',index,data_source=rb,weight_field=field)
+                #frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
+                #cPickle.dump(frb['temperature'],open(filetemp,'wb'),protocol=-1)
 
-                obj = ds.proj(('gas',ion_field),index,data_source=rb,weight_field=field)
-                frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
-                cPickle.dump(frb[('gas',ion_field)],open(fileion,'wb'),protocol=-1)
+                #obj = ds.proj(('gas',ion_field),index,data_source=rb,weight_field=field)
+                #frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
+                #cPickle.dump(frb[('gas',ion_field)],open(fileion,'wb'),protocol=-1)
 
-                bv = rb.quantities["BulkVelocity"]()
-                rb.set_field_parameter("bulk_velocity",bv)
+
                 obj = ds.proj(('gas','relative_velocity_'+index),index,data_source=rb,weight_field=field)
                 frb = obj.to_frb((rb_width,'code_length'),(num_cells,num_cells),center=rb_center)
                 cPickle.dump(frb[('gas','relative_velocity_'+index)].to('km/s').value,open(filevel,'wb'),protocol=-1)
@@ -227,7 +241,8 @@ def make_emission_gif_plots():
     nref11f_base = '_nref11f_refine200kpc_RD0016_'
     box_size = ds.arr(rb_width,'code_length').in_units('kpc')
     box_size = np.ceil(box_size/2.)
-    res_list = [0.2,0.5,1.0,5.0,10.0]
+    #res_list = [0.2,0.5,1.0,5.0,10.0]
+    res_list = [0.137]
     fontrc ={'fontname':'Helvetica','fontsize':20}
     mpl.rc('text', usetex=True)
     make_obs = True
@@ -246,7 +261,7 @@ def make_emission_gif_plots():
                 if res == res_list[0]:
                     fileinNAT = 'frbs/frb'+index+natural_base+field+'_forcedres.cpkl'
                     fileinREF = 'frbs/frb'+index+refined_base+field+'_forcedres.cpkl'
-                    fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
+                    fileinN11 = '/Users/dalek/Desktop/current_nref11f_frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
                     pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*0.182959,2)
                 else:
                     fileinNAT = 'frbs/frb'+index+natural_base+field+'_'+str(res)+'kpc.cpkl'
@@ -298,7 +313,7 @@ def make_emission_gif_plots():
                 else:
                     lineout = line
                 fig.suptitle('z=3, '+lineout+', '+str(res)+'kpc'+', '+str(pixsize)+'"',**fontrc)
-                plt.savefig('z3_'+index+'_'+field+'_'+str(res)+'kpc_SBdim_obscol.pdf')
+                plt.savefig('z3_'+index+'_'+field+'_'+str(res)+'kpc_SBdim_obscol_pixelsfixed.pdf')
                 plt.close()
 
     return
@@ -313,7 +328,8 @@ def make_small_emission_gif_plots():
     #forced68 = ds.quan(6.86096673e-02,'kpc')
     #forced137 = ds.quan(1.37219335e-01,'kpc')
     #res_list = [0.137,0.5,1.0,5.0,10.0]
-    res_list = [0.137]
+    #res_list = [0.137]
+    res_list = [0.2]
     #res_list = [0.2,0.5,1.0,5.0,10.0]
 
     fontrc ={'fontname':'Helvetica','fontsize':20}
@@ -334,7 +350,7 @@ def make_small_emission_gif_plots():
                 if res == res_list[0]:
                     fileinNAT = 'frbs/frb'+index+natural_base+field+'_forcedres.cpkl'
                     fileinREF = 'frbs/frb'+index+refined_base+field+'_forcedres.cpkl'
-                    fileinN11 = 'frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
+                    fileinN11 = '/Users/dalek/Desktop/current_nref11f_frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
                     pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*0.2,2)
                     #pixsize2 = round(cosmo.arcsec_per_kpc_proper(redshift).value*forced68.value,2)
                 else:
@@ -490,8 +506,8 @@ def make_velocity_emisweighted_gif_plots():
         for index in 'xyz':
             for res in res_list:
                 if res == res_list[0]:
-                    fileinNAT = 'frbs/frb'+index+natural_base+'vel_'+field+'_forcedres.cpkl'
-                    fileinREF = 'frbs/frb'+index+refined_base+'vel_'+field+'_forcedres.cpkl'
+                    fileinNAT = 'frbs/frb'+index+natural_base+'vel_'+field+'_forcedresGHCTEST.cpkl'
+                    fileinREF = 'frbs/frb'+index+refined_base+'vel_'+field+'_forcedresGHCTEST.cpkl'
                     fileinN11 = '/Users/dalek/Desktop/current_nref11f_frbs/frb'+index+nref11f_base+'vel_'+field+'_forcedres.cpkl'
                     pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*0.182959,2)
                 else:
@@ -534,7 +550,7 @@ def make_velocity_emisweighted_gif_plots():
                 else:
                     lineout = line
                 #fig.suptitle('z=3, '+lineout+', '+str(res)+'kpc'+', '+str(pixsize)+'"',**fontrc)
-                plt.savefig('z3_'+index+'_velocity_'+field+'_'+str(res)+'kpc_SBdim_obscol.pdf')
+                plt.savefig('z3_'+index+'_velocity_'+field+'_'+str(res)+'kpc_SBdim_GHCTEST.pdf')
                 plt.close()
 
     return
@@ -557,8 +573,8 @@ def make_small_velocity_emisweighted_gif_plots():
         for index in 'xyz':
             for res in res_list:
                 if res == res_list[0]:
-                    fileinNAT = 'frbs/frb'+index+natural_base+'vel_'+field+'_forcedres.cpkl'
-                    fileinREF = 'frbs/frb'+index+refined_base+'vel_'+field+'_forcedres.cpkl'
+                    fileinNAT = 'frbs/frb'+index+natural_base+'vel_'+field+'_forcedresGHCTEST.cpkl'
+                    fileinREF = 'frbs/frb'+index+refined_base+'vel_'+field+'_forcedresGHCTEST.cpkl'
                     fileinN11 = '/Users/dalek/Desktop/current_nref11f_frbs/frb'+index+nref11f_base+'vel_'+field+'_forcedres.cpkl'
                     pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*0.182959,2)
 
@@ -566,11 +582,11 @@ def make_small_velocity_emisweighted_gif_plots():
                     fileinREF_EMIS = 'frbs/frb'+index+refined_base+field+'_forcedres.cpkl'
                     fileinN11_EMIS = 'frbs/frb'+index+nref11f_base+field+'_forcedres.cpkl'
 
-                else:
-                    fileinNAT = 'frbs/frb'+index+natural_base+'vel_'+field+'_'+str(res)+'kpc.cpkl'
-                    fileinREF = 'frbs/frb'+index+refined_base+'vel_'+field+'_'+str(res)+'kpc.cpkl'
-                    fileinN11 = '/Users/dalek/Desktop/current_nref11f_frbs/frb'+index+nref11f_base+'vel_'+field+'_'+str(res)+'kpc.cpkl'
-                    pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*res,2)
+                #else:
+                #    fileinNAT = 'frbs/frb'+index+natural_base+'vel_'+field+'_'+str(res)+'kpc.cpkl'
+                #    fileinREF = 'frbs/frb'+index+refined_base+'vel_'+field+'_'+str(res)+'kpc.cpkl'
+                #    fileinN11 = '/Users/dalek/Desktop/current_nref11f_frbs/frb'+index+nref11f_base+'vel_'+field+'_'+str(res)+'kpc.cpkl'
+                #    pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*res,2)
 
                 frbNAT = cPickle.load(open(fileinNAT,'rb'))
                 frbREF = cPickle.load(open(fileinREF,'rb'))
@@ -633,7 +649,7 @@ def make_small_velocity_emisweighted_gif_plots():
                     lineout = 'CIII 977'
                 else:
                     lineout = line
-                plt.savefig('z3_'+index+'_velocity_'+field+'_'+str(res)+'kpc_SBdim_obscol_SMALL.pdf')
+                plt.savefig('z3_'+index+'_velocity_'+field+'_'+str(res)+'kpc_SBdim_obscol_SMALL_GHCTEST.pdf')
                 plt.close()
 
     return
@@ -1385,6 +1401,16 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
         plt.close()
     return
 
+def calculate_line_luminosities():
+    print lines
+    for line in lines:
+        energy = line_energies[line]
+        field = 'Emission_'+line
+        emis = rb[field]*rb['cell_volume'].in_units('cm**3')*4.*np.pi*energy
+        lumin = np.sum(emis)
+        print line + ' Luminosity: ',lumin
+        print line + ' Luminosity: ',np.log10(lumin)
+    return
 
 
 #make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
@@ -1394,9 +1420,9 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
 #create_emission_frbs()
 #make_emission_gif_plots()
 #make_small_emission_gif_plots()
-#create_phys_emis_weight_frbs()
-#make_emission_gif_plots()
+##make_emission_gif_plots()
 #cdf_plot_loop()
 #plot_SB_profiles_all_lines(box_width)
 #make_velocity_emisweighted_gif_plots()
-make_small_velocity_emisweighted_gif_plots()
+#make_velocity_emisweighted_gif_plots()
+calculate_line_luminosities()
