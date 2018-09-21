@@ -18,12 +18,12 @@ from emission_functions import *
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from astropy.cosmology import WMAP9 as cosmo
 
-#import holoviews as hv
-#import pandas as pd
-#import datashader as dshade
-#from holoviews.operation.datashader import datashade, aggregate
-#from holoviews import Store
-#hv.extension('matplotlib')
+import holoviews as hv
+import pandas as pd
+import datashader as dshade
+from holoviews.operation.datashader import datashade, aggregate
+from holoviews import Store
+hv.extension('matplotlib')
 
 def Stars(pfilter, data):
       return data[("all", "particle_type")] == 2
@@ -31,20 +31,19 @@ add_particle_filter("stars", function=Stars, filtered_type='all',
                     requires=["particle_type"])
 
 #base = "/Users/dalek/data/Molly/natural/nref11"
-base = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
-#base = "/Volumes/sonic/halo_008508/nref11n/nref11f"
+base2 = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+base = "/Volumes/sonic/halo_008508/nref11n/nref11f"
 fn = base+"/RD0016/RD0016"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 lines2 = ['O VI','C IV','C III _977','Si IV','H Alpha']
-track_name = base+"/halo_track"
-#track_name = base2+"/halo_track"
+#track_name = base+"/halo_track"
+track_name = base2+"/halo_track"
 args = fn.split('/')
 
 detect_color_key = {b'nope':'#808080',
                     b'poss':'#FF69B4',
                     b'prob':'#00CED1',
                     b'defi': '#32CD32'} #'#7FFF00'}
-
 line_color_key = {'OVI':'#2554C7','CIII_977':'#7D0552','CIV':'#438D80','SiIV':'#F75D59'}#,'HAlpha':''
 
 detect_limits = {'nope':(-10,1),
@@ -506,8 +505,8 @@ def make_velocity_emisweighted_gif_plots():
         for index in 'xyz':
             for res in res_list:
                 if res == res_list[0]:
-                    fileinNAT = 'frbs/frb'+index+natural_base+'vel_'+field+'_forcedresGHCTEST.cpkl'
-                    fileinREF = 'frbs/frb'+index+refined_base+'vel_'+field+'_forcedresGHCTEST.cpkl'
+                    fileinNAT = 'frbs/frb'+index+natural_base+'vel_'+field+'_forcedres.cpkl'
+                    fileinREF = 'frbs/frb'+index+refined_base+'vel_'+field+'_forcedres.cpkl'
                     fileinN11 = '/Users/dalek/Desktop/current_nref11f_frbs/frb'+index+nref11f_base+'vel_'+field+'_forcedres.cpkl'
                     pixsize = round(cosmo.arcsec_per_kpc_proper(redshift).value*0.182959,2)
                 else:
@@ -550,7 +549,7 @@ def make_velocity_emisweighted_gif_plots():
                 else:
                     lineout = line
                 #fig.suptitle('z=3, '+lineout+', '+str(res)+'kpc'+', '+str(pixsize)+'"',**fontrc)
-                plt.savefig('z3_'+index+'_velocity_'+field+'_'+str(res)+'kpc_SBdim_GHCTEST.pdf')
+                plt.savefig('z3_'+index+'_velocity_'+field+'_'+str(res)+'kpc_SBdim.pdf')
                 plt.close()
 
     return
@@ -935,21 +934,24 @@ def holoviews_radial_profiles(weight_by=None):
     x = rb['x']
     y = rb['y']
     z = rb['z']
+    vz = rb['z-velocity'].in_units('km/s')
 
     halo_center = ds.arr(rb_center,'code_length')
     dist = np.sqrt((halo_center[0]-rb['x'])**2.+(halo_center[1]-rb['y'])**2.+(halo_center[2]-rb['z'])**2.).in_units('kpc')
 
     df = pd.DataFrame({'temp':temp, 'dens':dens, 'Zgas':Zgas,'cell_volume':cell_volume,
-                        'x':x,'y':y,'z':z,'dist':dist,'cell_mass':cell_mass})
+                        'x':x,'y':y,'z':z,'dist':dist,'cell_mass':cell_mass,'vz':vz})
 
     temp_dist = hv.Scatter(df,kdims=['dist'],vdims=['temp'],label="Temperature ")
     dens_dist = hv.Scatter(df,kdims=['dist'],vdims=['dens'],label='Hydrogen Number Density')
     metal_dist = hv.Scatter(df,kdims=['dist'],vdims=['Zgas'],label='Metallicity')
+    vz_dist    = hv.Scatter(df,kdims=['dist'],vdims=['vz'],label='z Velocity')
 
     if weight_by == None:
-        dist_plots = (datashade(temp_dist,cmap=cm.Reds, dynamic=False,x_range=(0,60),y_range=(2,8.4)).opts(plot=dict(aspect='square'))
+        dist_plots = (datashade(temp_dist,cmap=cm.Reds, dynamic=False,x_range=(0,60),y_range=(3,8.4)).opts(plot=dict(aspect='square'))
                     + datashade(dens_dist,cmap=cm.Blues, dynamic=False,x_range=(0,60),y_range=(-6.5,2)).opts(plot=dict(aspect='square'))
-                    + datashade(metal_dist,cmap=cm.BuGn, dynamic=False,x_range=(0,60),y_range=(-8.5,1.4)).opts(plot=dict(aspect='square')))
+                    + datashade(metal_dist,cmap=cm.BuGn, dynamic=False,x_range=(0,60),y_range=(-7.,1.4)).opts(plot=dict(aspect='square'))
+                    + datashade(vz_dist, cmap=cm.Purples,dynamic=False,x_range=(0,60),y_range=(-500.,500.)).opts(plot=dict(aspect='square')))
         fileout= 'basic_profile_'+args[-3]+'_'+args[-1]
 
     if weight_by == 'cell_mass':
@@ -1403,14 +1405,39 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
 
 def calculate_line_luminosities():
     print lines
+    outF = open('nref11f_luminosities.out','w')
     for line in lines:
         energy = line_energies[line]
         field = 'Emission_'+line
         emis = rb[field]*rb['cell_volume'].in_units('cm**3')*4.*np.pi*energy
         lumin = np.sum(emis)
-        print line + ' Luminosity: ',lumin
-        print line + ' Luminosity: ',np.log10(lumin)
+        lineout =  line + ' Luminosity: '+str(lumin)+' \n'
+        outF.write(line)
+        lineout =  line + ' Luminosity: '+str(np.log10(lumin)) + ' \n'
+        outF.write(line)
+
+    outF.close()
     return
+
+
+def plot_velocity_emission_slices():
+    vel_bins = np.linspace(-500,500,21)
+    #pwidth = ds.arr(rb_width,'code_length').in_units('kpc').value
+    pwidth = 71.94245046473236
+    #lines = ['OVI']
+    for line in lines:
+        field = 'Emission_'+line
+        index = 'z'
+        for i in range(20):
+            vlow,vhigh = vel_bins[i],vel_bins[i+1]
+            print vlow,vhigh
+            vel_cut = rb.cut_region(['(obj[("enzo","z-velocity")].in_units("km/s") >= '+str(vlow)+') & (obj[("enzo","z-velocity")].in_units("km/s") < '+str(vhigh)+')'])
+            proj = yt.ProjectionPlot(ds,index,field,data_source=vel_cut,center=rb_center,width=(pwidth,'kpc'))
+            proj.set_zlim(field,1e-5,1e3)
+            proj.set_cmap(field,mymap)
+            proj.save('z3_'+index+'_nref10f_velmaps_'+str(int(vlow))+'_'+str(int(vhigh))+'_'+line+'.pdf')
+    return
+
 
 
 #make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
@@ -1425,4 +1452,6 @@ def calculate_line_luminosities():
 #plot_SB_profiles_all_lines(box_width)
 #make_velocity_emisweighted_gif_plots()
 #make_velocity_emisweighted_gif_plots()
-calculate_line_luminosities()
+#calculate_line_luminosities()
+#plot_velocity_emission_slices()
+holoviews_radial_profiles()
