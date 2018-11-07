@@ -18,12 +18,12 @@ from emission_functions import *
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from astropy.cosmology import WMAP9 as cosmo
 
-import holoviews as hv
-import pandas as pd
-import datashader as dshade
-from holoviews.operation.datashader import datashade, aggregate
-from holoviews import Store
-hv.extension('matplotlib')
+#import holoviews as hv
+#import pandas as pd
+#import datashader as dshade
+#from holoviews.operation.datashader import datashade, aggregate
+#from holoviews import Store
+#hv.extension('matplotlib')
 
 def Stars(pfilter, data):
       return data[("all", "particle_type")] == 2
@@ -31,13 +31,14 @@ add_particle_filter("stars", function=Stars, filtered_type='all',
                     requires=["particle_type"])
 
 #base = "/Users/dalek/data/Molly/natural/nref11"
-base2 = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
-base = "/Volumes/sonic/halo_008508/nref11n/nref11f"
+#base2 = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+#base = "/Volumes/sonic/halo_008508/nref11n/nref11f"
+base = "/Users/lcorlies/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+#base = "/Users/lcorlies/data/Molly/natural/nref11"
 fn = base+"/RD0016/RD0016"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 lines2 = ['O VI','C IV','C III _977','Si IV','H Alpha']
-#track_name = base+"/halo_track"
-track_name = base2+"/halo_track"
+track_name = base+"/halo_track"
 args = fn.split('/')
 
 detect_color_key = {b'nope':'#808080',
@@ -1156,9 +1157,9 @@ def cdf_plot_loop():
     return
 
 def hden_temp_hist(index,base,RD,line,resolution,redshift):
-    hden_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_hden_Emission_'+line+'_'+resolution+'.cpkl'
-    temp_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_temp_Emission_'+line+'_'+resolution+'.cpkl'
-    emis_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_Emission_'+line+'_'+resolution+'.cpkl'
+    hden_file = '/Users/lcorlies/repos/BmoreCGM/frbs/frb'+index+base+RD+'_hden_Emission_'+line+'_'+resolution+'.cpkl'
+    temp_file = '/Users/lcorlies/repos/BmoreCGM/frbs/frb'+index+base+RD+'_temp_Emission_'+line+'_'+resolution+'.cpkl'
+    emis_file = '/Users/lcorlies/repos/BmoreCGM/frbs/frb'+index+base+RD+'_Emission_'+line+'_'+resolution+'.cpkl'
 
     hden = cPickle.load(open(hden_file,'rb'))
     temp = cPickle.load(open(temp_file,'rb'))
@@ -1205,9 +1206,9 @@ def hden_temp_hist(index,base,RD,line,resolution,redshift):
     return hist,avgvals,maxvals,averages
 
 def add_phase_histograms(ax,field,index,base,RD,resolution,redshift,line):
-    hden_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_hden_Emission_'+line+'_'+resolution+'.cpkl'
-    temp_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_temp_Emission_'+line+'_'+resolution+'.cpkl'
-    emis_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_Emission_'+line+'_'+resolution+'.cpkl'
+    hden_file = '/Users/lcorlies/repos/BmoreCGM/frbs/frb'+index+base+RD+'_hden_Emission_'+line+'_'+resolution+'.cpkl'
+    temp_file = '/Users/lcorlies/repos/BmoreCGM/frbs/frb'+index+base+RD+'_temp_Emission_'+line+'_'+resolution+'.cpkl'
+    emis_file = '/Users/lcorlies/repos/BmoreCGM/frbs/frb'+index+base+RD+'_Emission_'+line+'_'+resolution+'.cpkl'
 
     hden = cPickle.load(open(hden_file,'rb'))
     temp = cPickle.load(open(temp_file,'rb'))
@@ -1228,28 +1229,38 @@ def add_phase_histograms(ax,field,index,base,RD,resolution,redshift,line):
     idG = np.where((emis >= 3.))[0]
 
     if field == 'temp':
-        bins = np.arange(3.5,6.5,0.1)
+        if line == 'OVI':
+            #bins = np.arange(4.5,6.5,0.1)
+            bins = np.linspace(4.5,6.5,40)
+            ax.set_yticks(np.linspace(4.5,6.5,5))
+            ax.set_ylim([4.5,6.5])
+        else:
+            bins = np.arange(3.5,6.5,0.1)
+            ax.set_yticks(np.linspace(3.5,6.5,7))
+            ax.set_ylim([3.5,6.5])
+
         ax.hist(temp[idN],bins=bins, orientation='horizontal', color='k', edgecolor='w',alpha=0.5,normed=True)
         ax.hist(temp[idP],bins=bins, orientation='horizontal', color='DeepPink', edgecolor='w',alpha=0.5,normed=True)
         ax.hist(temp[idB],bins=bins, orientation='horizontal', color='DarkTurquoise', edgecolor='w',alpha=0.5,normed=True)
         ax.hist(temp[idG],bins=bins, orientation='horizontal', color='#50A638', edgecolor='w',alpha=0.5,normed=True)
-
-        ax.set_yticks(np.linspace(3.5,6.5,7))
         ax.set_xticklabels([])
         ax.set_yticklabels([])
-        ax.set_ylim([3.5,6.5])
         ax.set_axis_off()
 
     elif field == 'hden':
-        bins = np.linspace(-6,1,50)
+        if line == 'OVI':
+            bins = np.linspace(-5,0,44)
+            ax.set_xlim([-5,0])
+        else:
+            bins = np.linspace(-6,1,50)
+            ax.set_xlim([-6,1])
+
         ax.hist(hden[idN],bins=bins, orientation='vertical', color='k', edgecolor='w',alpha=0.5,normed=True)
         ax.hist(hden[idP],bins=bins, orientation='vertical', color='DeepPink', edgecolor='w',alpha=0.5,normed=True)
         ax.hist(hden[idB],bins=bins, orientation='vertical', color='DarkTurquoise', edgecolor='w',alpha=0.5,normed=True)
         ax.hist(hden[idG],bins=bins, orientation='vertical', color='#50A638', edgecolor='w',alpha=0.5,normed=True)
-
         ax.set_xticks([]) # Ensures we have the same ticks as the scatter plot !
         ax.set_yticklabels([])
-        ax.set_xlim([-6,1])
         ax.set_axis_off()
 
     else:
@@ -1274,11 +1285,17 @@ def make_weighted_phase_diagrams(index,base,RD,resolution,redshift):
                           interpolation='nearest',origin='lower',cmap=mymap,vmin=-5,vmax=3)
 
         add_grid(ax1)
-        ax1.set_xlim([-6,1])
-        ax1.set_ylim([3.5,6.5])
+        if line == 'OVI':
+            ax1.set_xlim([-5,0])
+            ax1.set_ylim([4.5,6.5])
+            ax1.set_xticks(np.linspace(-5,0,6))
+            ax1.set_xticklabels(np.linspace(-5,0,6))
+        else:
+            ax1.set_xlim([-6,1])
+            ax1.set_ylim([3.5,6.5])
+            ax1.set_xticks(np.linspace(-6,1,8)) # Force this for consistency with hists!
+            ax1.set_xticklabels(np.linspace(-6,1,8))
         ax1.set_xlabel(r' ') # Force this empty !
-        ax1.set_xticks(np.linspace(-6,1,8)) # Force this for consistency with hists!
-        ax1.set_xticklabels(np.linspace(-6,1,8))
         ax1.set_ylabel(r'Temperature [log(K)]')
         ax1.set_xlabel(r'Hydrogen Number Density [log(cm^{-3})]')
         x0,x1 = ax1.get_xlim()
@@ -1306,9 +1323,9 @@ def make_weighted_phase_diagrams(index,base,RD,resolution,redshift):
     return
 
 def hden_temp_ionfrac_hist(index,base,RD,line,resolution,redshift):
-    hden_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_hden_Emission_'+line+'_'+resolution+'.cpkl'
-    temp_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_temp_Emission_'+line+'_'+resolution+'.cpkl'
-    ionf_file = '/Users/dalek/repos/BmoreCGM/frbs/frb'+index+base+RD+'_ionfrac_Emission_'+line+'_'+resolution+'.cpkl'
+    hden_file = '/Users/lcorlies/repos/BmoreCGM/frbs/frb'+index+base+RD+'_hden_Emission_'+line+'_'+resolution+'.cpkl'
+    temp_file = '/Users/lcorlies/repos/BmoreCGM/frbs/frb'+index+base+RD+'_temp_Emission_'+line+'_'+resolution+'.cpkl'
+    ionf_file = '/Users/lcorlies/repos/BmoreCGM/frbs/frb'+index+base+RD+'_ionfrac_Emission_'+line+'_'+resolution+'.cpkl'
 
     hden = cPickle.load(open(hden_file,'rb'))
     temp = cPickle.load(open(temp_file,'rb'))
@@ -1316,7 +1333,10 @@ def hden_temp_ionfrac_hist(index,base,RD,line,resolution,redshift):
 
     hden,temp,ionf = np.log10(hden.flat),np.log10(temp.flat),ionf.flat
 
-    hist, xedges, yedges  = np.histogram2d(hden,temp,range=[[-6,1],[3.5, 6.5]],bins=120)#,emis=coldens)
+    if line == 'OVI':
+        hist, xedges, yedges = np.histogram2d(hden,temp,range=[[-5,0],[3.5,6.5]],bins=120)
+    else:
+        hist, xedges, yedges  = np.histogram2d(hden,temp,range=[[-6,1],[3.5, 6.5]],bins=120)#,emis=coldens)
 
     xbins = np.digitize(hden,xedges[1:-1])
     ybins = np.digitize(temp,yedges[1:-1])
@@ -1366,23 +1386,33 @@ def make_ionfrac_weighted_phase_diagrams(index,base,RD,resolution,redshift):
         ax1 = plt.subplot(gs[1,0])
         # --------------------------------------------------------
         if line in ion_lims.keys():
-            plt1 = ax1.imshow(avgvals.T,extent=[-6,1,3.5,6.5],vmin=ion_lims[line][0],vmax=ion_lims[line][1],
+            if line == 'OVI':
+                plt1 = ax1.imshow(avgvals.T,extent=[-5,0,4.5,6.5],vmin=ion_lims[line][0],vmax=ion_lims[line][1],
+                          interpolation='nearest',origin='lower',cmap='Purples')
+            else:
+                plt1 = ax1.imshow(avgvals.T,extent=[-6,1,3.5,6.5],vmin=ion_lims[line][0],vmax=ion_lims[line][1],
                           interpolation='nearest',origin='lower',cmap='Purples')#mymap,vmin=-5,vmax=3)
         else:
             plt1 = ax1.imshow(avgvals.T,extent=[-6,1,3.5,6.5],
                           interpolation='nearest',origin='lower',cmap='Purples')
         add_grid(ax1)
-        ax1.set_xlim([-6,1])
-        ax1.set_ylim([3.5,6.5])
+        if line == 'OVI':
+            ax1.set_xlim([-5,0])
+            ax1.set_ylim([4.5,6.5])
+            ax1.set_xticks(np.linspace(-5,0,6))
+            ax1.set_xticklabels(np.linspace(-5,0,6))
+        else:
+            ax1.set_xlim([-6,1])
+            ax1.set_ylim([3.5,6.5])
+            ax1.set_xticks(np.linspace(-6,1,8)) # Force this for consistency with hists!
+            ax1.set_xticklabels(np.linspace(-6,1,8))
         ax1.set_xlabel(r' ') # Force this empty !
-        ax1.set_xticks(np.linspace(-6,1,8)) # Force this for consistency with hists!
-        ax1.set_xticklabels(np.linspace(-6,1,8))
         ax1.set_ylabel(r'Temperature [log(K)]')
         ax1.set_xlabel(r'Hydrogen Number Density [log(cm^{-3})]')
         x0,x1 = ax1.get_xlim()
         y0,y1 = ax1.get_ylim()
         ax1.set_aspect((x1-x0)/(y1-y0))
-        plt.colorbar(plt1)
+        #plt.colorbar(plt1)
         # --------------------------------------------------------
         #cbax = plt.subplot(gs[2,0]) # Place it where it should be.
         # --------------------------------------------------------
@@ -1440,10 +1470,10 @@ def plot_velocity_emission_slices():
 
 
 
-#make_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
-#make_weighted_phase_diagrams('x','_nref11_','RD0016','forcedres',ds.current_redshift)
-#make_ionfrac_weighted_phase_diagrams('x','_nref11_','RD0020','forcedres',ds.current_redshift)
-#make_ionfrac_weighted_phase_diagrams('x','_nref11n_nref10f_refine200kpc_z4to2_','RD0020','forcedres',ds.current_redshift)
+#make_weighted_phase_diagrams('z','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
+make_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
+make_ionfrac_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
+#make_ionfrac_weighted_phase_diagrams('z','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
 #create_emission_frbs()
 #make_emission_gif_plots()
 #make_small_emission_gif_plots()
@@ -1454,4 +1484,4 @@ def plot_velocity_emission_slices():
 #make_velocity_emisweighted_gif_plots()
 #calculate_line_luminosities()
 #plot_velocity_emission_slices()
-holoviews_radial_profiles()
+#holoviews_radial_profiles()
