@@ -5,7 +5,7 @@ from astropy.table import Table
 import cPickle
 import matplotlib as mpl
 import trident
-import seaborn as sns
+#import seaborn as sns
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
@@ -68,12 +68,12 @@ fontcs ={'fontname':'Helvetica','fontsize':16}
 #mpl.rc('text', usetex=True)
 
 ### Fancy seaborn colormaps!! ###
-sns.set_style("white", {'axes.grid' : False})
-colors1 = plt.cm.Greys(np.linspace(0., 0.8, 192))
-sns_cmap2 = sns.blend_palette(('Pink','DeepPink','#1E90FF','DarkTurquoise','#50A638'), n_colors=40,as_cmap=True)
-colors2 = sns_cmap2(np.linspace(0.,1,64))
-colors = np.vstack((colors1, colors2))
-mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
+#sns.set_style("white", {'axes.grid' : True,'axes.color':'gray'})
+#colors1 = plt.cm.Greys(np.linspace(0., 0.8, 192))
+#sns_cmap2 = sns.blend_palette(('Pink','DeepPink','#1E90FF','DarkTurquoise','#50A638'), n_colors=40,as_cmap=True)
+#colors2 = sns_cmap2(np.linspace(0.,1,64))
+#colors = np.vstack((colors1, colors2))
+#mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
 
 
 ds = yt.load(fn)
@@ -1081,12 +1081,14 @@ def covering_fraction_by_radius(rb_width,SB_cutoff=1.):
 def cumulative_distribution_function(ax,line,res,rb_width):
     field = 'Emission_'+line
     bases = ['_nref11_RD0016_','_nref11n_nref10f_refine200kpc_z4to2_RD0016_','_nref11f_refine200kpc_RD0016_']
+    pix_areas = iter([137.**2,137.**2,68.**2])
     #colors = ['3 colors here!']
 
     rb_width = ds.quan(rb_width,'code_length').in_units('kpc')
     rb_width = float(rb_width.value)
 
     bins = np.linspace(-1.5,3.5,11)
+    #bins = np.linspace(-1,6,25)
 
     ls = iter(['--', '-', '-'])
     lw = iter([1.5,3.0,1.5])
@@ -1098,6 +1100,7 @@ def cumulative_distribution_function(ax,line,res,rb_width):
 
 
     for base in bases:
+        pix_size = pix_areas.next()
         for index in indices:
             if res == 'forced':
                 filein = 'frbs/frb'+index+base+field+'_forcedres.cpkl'
@@ -1107,34 +1110,37 @@ def cumulative_distribution_function(ax,line,res,rb_width):
             frb = cPickle.load(open(filein,'rb'))
             frb = np.log10(frb/(1.+redshift)**4)
             frb = frb.flatten()
-            tot_pix += len(frb)
+            tot_pix += len(frb)*pix_size
 
             i = 0
             while i < len(bins):
                 if i == 0:
                     num_pix = np.where(frb < bins[i])[0]
-                    pix_hist[i] += len(num_pix)
+                    pix_hist[i] += len(num_pix)#*pix_size
                 elif i == len(bins)-1:
                     num_pix = np.where(frb >= bins[i])[0]
-                    pix_hist[i] += len(num_pix)
+                    pix_hist[i] += len(num_pix)#*pix_size
                 else:
                     num_pix = np.where((frb < bins[i+1]) & (frb >= bins[i]))[0]
                     #hist[i] = float(len(num_pix))/len(frb)
-                    pix_hist[i] += len(num_pix)
+                    pix_hist[i] += len(num_pix)#*pix_size
                 i = i + 1
 
         for i in range(len(hist)):
-            hist[i] = float(pix_hist[i]/tot_pix)
+            hist[i] = pix_hist[i] #float(pix_hist[i]/tot_pix)
 
         label_out = base.split('_')[1]
         ls_here,lw_here = ls.next(),lw.next()
         ax.plot(bins,np.log10(hist),label=label_out,color=line_color_key[line],linestyle=ls_here,lw=lw_here)
+        print label_out,line,np.log10(hist)
+        #ax.plot(bins,hist,label=label_out,color=line_color_key[line],linestyle=ls_here,lw=lw_here)
         #ax.plot(bins,hist,color=line_color_key[line],marker='s',linestyle=ls_here,lw=1.5)
 
     #ax.set_xlabel('SB')
     #ax.set_ylabel('Pix Fraction')
     ax.set_xlim(-1,3)
-    ax.set_ylim(-5.5,-0.5)
+    #ax.set_xlim(-1,6)
+    #ax.set_ylim(-5.5,-0.5)
     ax.legend()
     #plt.savefig('SB_cdf_RD0016_'+field+'_forcedres.pdf')
     #plt.close()
@@ -1471,14 +1477,14 @@ def plot_velocity_emission_slices():
 
 
 #make_weighted_phase_diagrams('z','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
-make_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
-make_ionfrac_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
+#make_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
+#make_ionfrac_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
 #make_ionfrac_weighted_phase_diagrams('z','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
 #create_emission_frbs()
 #make_emission_gif_plots()
 #make_small_emission_gif_plots()
 ##make_emission_gif_plots()
-#cdf_plot_loop()
+cdf_plot_loop()
 #plot_SB_profiles_all_lines(box_width)
 #make_velocity_emisweighted_gif_plots()
 #make_velocity_emisweighted_gif_plots()
