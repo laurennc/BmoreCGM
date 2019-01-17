@@ -1,5 +1,44 @@
 import numpy as np
 from astropy.table import Table
+import json
+
+def parse_MPC_comet_json(filename):
+    fopen = open(filename)
+    data = json.load(fopen)
+    names = ['name','day_perihelion','epoch_day','epoch_month','epoch_year',
+             'G','H','month_perihelion','node','orbit_type','peri',
+             'perihelion_dist','provis_packed_desig','ref','year_perihelion','e','i']
+    dtype = [str,int,int,int,int,float,float,int,float,str,float,float,str,str,int,float,float]
+    t = Table(names=names,dtype=dtype)
+    count_bad = 0
+    print data[0].keys()
+    for row in range(len(data)):
+        if data[row].keys() == data[0].keys():
+            name                = data[row]['Designation_and_name']
+            day_perihelion      = data[row]['Day_of_perihelion']
+            epoch_day           = data[row]['Epoch_day']
+            epoch_month         = data[row]['Epoch_month']
+            epoch_year          = data[row]['Epoch_year']
+            G                   = data[row]['G']
+            H                   = data[row]['H']
+            month_perihelion    = data[row]['Month_of_perihelion']
+            node                = data[row]['Node']
+            orbit_type          = data[row]['Orbit_type']
+            peri                = data[row]['Peri']
+            perihelion_dist     = data[row]['Perihelion_dist']
+            provis_packed_desig = data[row]['Provisional_packed_desig']
+            ref                 = data[row]['Ref']
+            year_perihelion     = data[row]['Year_of_perihelion']
+            e                   = data[row]['e']
+            i                   = data[row]['i']
+            all_vals = [name,day_perihelion,epoch_day,epoch_month,epoch_year,G,H,
+                        month_perihelion,node,orbit_type,peri,perihelion_dist,
+                        provis_packed_desig,ref,year_perihelion,e,i]
+            t.add_row(all_vals)
+        else:
+            count_bad = count_bad + 1
+    print "Number of bad rows found: ",count_bad
+    return t
 
 def parse_MPC_table(filename):
     fopen = open(filename)
