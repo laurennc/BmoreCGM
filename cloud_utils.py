@@ -6,6 +6,8 @@ useful stuff added LC010219
 import copy
 import numpy as np
 import re
+from astropy.io import fits
+import trident
 
 def reduce_ion_vector(vx, ion):
     """ this function takes in two vectors for velocity and ionization
@@ -146,4 +148,4 @@ def parse_for_ray_parameters(filename):
     end = re.split(' unitary,| unitary',end)[:-1]
     start = [float(i) for i in start]
     end = [float(i) for i in end]
-    return start,end
+    return np.array(start),np.array(end)
