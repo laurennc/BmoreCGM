@@ -5,7 +5,7 @@ from astropy.table import Table
 import cPickle
 import matplotlib as mpl
 import trident
-#import seaborn as sns
+import seaborn as sns
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
@@ -33,8 +33,8 @@ add_particle_filter("stars", function=Stars, filtered_type='all',
 #base = "/Users/dalek/data/Molly/natural/nref11"
 #base2 = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 #base = "/Volumes/sonic/halo_008508/nref11n/nref11f"
-base = "/Users/lcorlies/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
-#base = "/Users/lcorlies/data/Molly/natural/nref11"
+#base = "/Users/lcorlies/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
+base = "/Users/lcorlies/data/Molly/natural/nref11"
 fn = base+"/RD0016/RD0016"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 lines2 = ['O VI','C IV','C III _977','Si IV','H Alpha']
@@ -68,12 +68,12 @@ fontcs ={'fontname':'Helvetica','fontsize':16}
 #mpl.rc('text', usetex=True)
 
 ### Fancy seaborn colormaps!! ###
-#sns.set_style("white", {'axes.grid' : True,'axes.color':'gray'})
-#colors1 = plt.cm.Greys(np.linspace(0., 0.8, 192))
-#sns_cmap2 = sns.blend_palette(('Pink','DeepPink','#1E90FF','DarkTurquoise','#50A638'), n_colors=40,as_cmap=True)
-#colors2 = sns_cmap2(np.linspace(0.,1,64))
-#colors = np.vstack((colors1, colors2))
-#mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
+sns.set_style("white", {'axes.grid' : True,'axes.color':'gray'})
+colors1 = plt.cm.Greys(np.linspace(0., 0.8, 192))
+sns_cmap2 = sns.blend_palette(('Pink','DeepPink','#1E90FF','DarkTurquoise','#50A638'), n_colors=40,as_cmap=True)
+colors2 = sns_cmap2(np.linspace(0.,1,64))
+colors = np.vstack((colors1, colors2))
+mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
 
 
 ds = yt.load(fn)
@@ -1245,7 +1245,7 @@ def add_phase_histograms(ax,field,index,base,RD,resolution,redshift,line):
             ax.set_yticks(np.linspace(3.5,6.5,7))
             ax.set_ylim([3.5,6.5])
 
-        ax.hist(temp[idN],bins=bins, orientation='horizontal', color='k', edgecolor='w',alpha=0.5,normed=True)
+        ax.hist(temp[idN],bins=bins, orientation='horizontal', color='k', edgecolor='w',alpha=0.35,normed=True)
         ax.hist(temp[idP],bins=bins, orientation='horizontal', color='DeepPink', edgecolor='w',alpha=0.5,normed=True)
         ax.hist(temp[idB],bins=bins, orientation='horizontal', color='DarkTurquoise', edgecolor='w',alpha=0.5,normed=True)
         ax.hist(temp[idG],bins=bins, orientation='horizontal', color='#50A638', edgecolor='w',alpha=0.5,normed=True)
@@ -1261,7 +1261,7 @@ def add_phase_histograms(ax,field,index,base,RD,resolution,redshift,line):
             bins = np.linspace(-6,1,50)
             ax.set_xlim([-6,1])
 
-        ax.hist(hden[idN],bins=bins, orientation='vertical', color='k', edgecolor='w',alpha=0.5,normed=True)
+        ax.hist(hden[idN],bins=bins, orientation='vertical', color='k', edgecolor='w',alpha=0.35,normed=True)
         ax.hist(hden[idP],bins=bins, orientation='vertical', color='DeepPink', edgecolor='w',alpha=0.5,normed=True)
         ax.hist(hden[idB],bins=bins, orientation='vertical', color='DarkTurquoise', edgecolor='w',alpha=0.5,normed=True)
         ax.hist(hden[idG],bins=bins, orientation='vertical', color='#50A638', edgecolor='w',alpha=0.5,normed=True)
@@ -1475,16 +1475,16 @@ def plot_velocity_emission_slices():
     return
 
 
-
+lines = ['OVI']
 #make_weighted_phase_diagrams('z','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
-#make_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
+make_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
 #make_ionfrac_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
 #make_ionfrac_weighted_phase_diagrams('z','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
 #create_emission_frbs()
 #make_emission_gif_plots()
 #make_small_emission_gif_plots()
 ##make_emission_gif_plots()
-cdf_plot_loop()
+#cdf_plot_loop()
 #plot_SB_profiles_all_lines(box_width)
 #make_velocity_emisweighted_gif_plots()
 #make_velocity_emisweighted_gif_plots()
