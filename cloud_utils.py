@@ -3,11 +3,17 @@ useful stuff for cloud analysis JT090618
 useful stuff added LC010219
 """
 
-import copy
-import numpy as np
-import re
 from astropy.io import fits
+from astropy.table import Table
+from astropy.table import Column
+import numpy as np
 import trident
+import cPickle
+import glob
+import os
+import yt
+import copy
+import re
 
 def reduce_ion_vector(vx, ion):
     """ this function takes in two vectors for velocity and ionization
@@ -126,7 +132,7 @@ def get_trident_ray(ds, ray_start, ray_end, line_list, **kwargs):
     input: simulation dataset, the ray start and end points, and the line list;
     returns: the trident ray with the physical information we want to keep track of
     '''
-    out_tri_name = kwargs.get('out_tri_name', "temp.h5")
+    #out_tri_name = kwargs.get('out_tri_name', "temp.h5")
     ## first, figure out the fields
     field_list = ['metallicity', 'H_p0_number_density']
 
@@ -135,7 +141,7 @@ def get_trident_ray(ds, ray_start, ray_end, line_list, **kwargs):
     ## now, make the ray
     triray = trident.make_simple_ray(ds, start_position=ray_start.copy(),
                               end_position=ray_end.copy(),
-                              data_filename=out_tri_name,
+                             # data_filename=out_tri_name,
                               lines=line_list,
                               ftype='gas',
                               fields=['metallicity', 'H_p0_number_density'])
@@ -143,9 +149,55 @@ def get_trident_ray(ds, ray_start, ray_end, line_list, **kwargs):
 
 def parse_for_ray_parameters(filename):
     hdu = fits.open(filename)
-    start,end = hdu[0].header['raystart'], hdu[0].header['rayend']
-    start = re.split(' unitary,| unitary',start)[:-1]
-    end = re.split(' unitary,| unitary',end)[:-1]
-    start = [float(i) for i in start]
-    end = [float(i) for i in end]
+    if 'RAYSTART' not in hdu[0].header.keys():
+        return False,False
+    else:
+        start,end = hdu[0].header['raystart'], hdu[0].header['rayend']
+        if 'unitary' in start and end:
+            if ',' in start and end:
+                start = re.split(' unitary,| unitary',start)[:-1]
+                end = re.split(' unitary,| unitary',end)[:-1]
+            else:
+                start,end = start.split()[1:-2],end.split()[1:-2]
+        elif ',' in start and end:
+            start,end = re.split(',',start),re.split(',',end)
+        else:
+            start,end = start.split(),end.split()
+
+        start = [float(i) for i in start]
+        end = [float(i) for i in end]
+
     return np.array(start),np.array(end)
+
+def examine_column_density_thresholds(directory,enzo_filename):
+    spectra_list = glob.glob(os.path.join(directory,'*.fits'))
+    ions = ['SiII','SiIII','SiIV','CII','CIII','CIV','OVI','MgII','NeVIII']
+    line_list = ['Si II','Si III','Si IV','C II','C III','C IV','O VI','Mg II','Ne VIII']
+    field_list = ['Si_p1','Si_p2','Si_p3','C_p1','C_p2','C_p3','O_p5','Mg_p1','Ne_p7']
+    t = Table(names=ions,dtype=[float,float,float,float,float,float,float,float,float])
+
+    ds = yt.load(enzo_filename)
+    trident.add_ion_fields(ds, ions=['H I','Si II', 'Si III', 'Si IV', 'C II','C III', 'C IV', 'O VI', 'Mg II','Ne VIII'])
+
+    useable_spectra = []
+    for spectrum in spectra_list:
+        ## grab the ray data that I need
+        print spectrum
+        start,end = parse_for_ray_parameters(spectrum)
+        if isinstance(start,type(False)):
+            continue
+        lray = trident.make_simple_ray(ds,start_position=start,end_position=end,lines=line_list)
+        ldata = lray.all_data()
+        thresh_here = []
+        useable_spectra.append(spectrum)
+
+        for ion in field_list:
+            ion_to_use = ldata[ion+'_number_density']*ldata['dl']
+            threshold,num_cells = get_fion_threshold(ion_to_use,0.8)
+            thresh_here.append(threshold)
+        t.add_row(thresh_here)
+
+    spec_col = Column(data=useable_spectra, name='name')
+    t.add_column(spec_col)
+    cPickle.dump(t,open('threshold_table.cpkl','wb'),protocol=-1)
+    return t
