@@ -10,7 +10,7 @@ import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 #from consistency import *
-from yt.data_objects.particle_filters import add_particle_filter
+#from yt.data_objects.particle_filters import add_particle_filter
 from get_halo_center import *
 
 from matplotlib.colorbar import Colorbar
@@ -25,9 +25,11 @@ from astropy.cosmology import WMAP9 as cosmo
 #from holoviews import Store
 #hv.extension('matplotlib')
 
-def Stars(pfilter, data):
-      return data[("all", "particle_type")] == 2
-add_particle_filter("stars", function=Stars, filtered_type='all',
+#def Stars(pfilter, data):
+#      return data[("all", "particle_type")] == 2
+def _stars(pfilter, data):
+     return data[(pfilter.filtered_type, 'particle_type')] == 2
+yt.add_particle_filter("stars", function=Stars, filtered_type='all',
                     requires=["particle_type"])
 
 #base = "/Users/dalek/data/Molly/natural/nref11"
@@ -1477,7 +1479,7 @@ def plot_velocity_emission_slices():
 
 lines = ['OVI']
 #make_weighted_phase_diagrams('z','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
-make_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
+#make_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
 #make_ionfrac_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
 #make_ionfrac_weighted_phase_diagrams('z','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
 #create_emission_frbs()
