@@ -10,7 +10,7 @@ import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 #from consistency import *
-from yt.data_objects.particle_filters import add_particle_filter
+#from yt.data_objects.particle_filters import add_particle_filter
 from get_halo_center import *
 
 from matplotlib.colorbar import Colorbar
@@ -25,9 +25,11 @@ from holoviews.operation.datashader import datashade, aggregate
 from holoviews import Store
 hv.extension('matplotlib')
 
-def Stars(pfilter, data):
-      return data[("all", "particle_type")] == 2
-add_particle_filter("stars", function=Stars, filtered_type='all',
+#def Stars(pfilter, data):
+#      return data[("all", "particle_type")] == 2
+def _stars(pfilter, data):
+     return data[(pfilter.filtered_type, 'particle_type')] == 2
+yt.add_particle_filter("stars", function=Stars, filtered_type='all',
                     requires=["particle_type"])
 
 #base = "/Users/dalek/data/Molly/natural/nref11"
