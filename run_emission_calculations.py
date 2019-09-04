@@ -32,11 +32,11 @@ def _stars(pfilter, data):
 yt.add_particle_filter("stars", function=Stars, filtered_type='all',
                     requires=["particle_type"])
 
-#base = "/Users/dalek/data/Molly/natural/nref11"
+base = "/Users/dalek/data/Molly/natural/nref11"
 #base2 = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 #base = "/Volumes/sonic/halo_008508/nref11n/nref11f"
 #base = "/Users/lcorlies/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
-base = "/Users/lcorlies/data/Molly/natural/nref11"
+#base = "/Users/lcorlies/data/Molly/natural/nref11"
 fn = base+"/RD0016/RD0016"
 lines = ['OVI','CIV','CIII_977','SiIV','HAlpha']
 lines2 = ['O VI','C IV','C III _977','Si IV','H Alpha']
