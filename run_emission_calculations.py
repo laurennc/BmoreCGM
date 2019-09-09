@@ -18,12 +18,12 @@ from emission_functions import *
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from astropy.cosmology import WMAP9 as cosmo
 
-#import holoviews as hv
-#import pandas as pd
-#import datashader as dshade
-#from holoviews.operation.datashader import datashade, aggregate
-#from holoviews import Store
-#hv.extension('matplotlib')
+import holoviews as hv
+import pandas as pd
+import datashader as dshade
+from holoviews.operation.datashader import datashade, aggregate
+from holoviews import Store
+hv.extension('matplotlib')
 
 #def Stars(pfilter, data):
 #      return data[("all", "particle_type")] == 2
@@ -34,7 +34,7 @@ yt.add_particle_filter("stars", function=Stars, filtered_type='all',
 
 base = "/Users/dalek/data/Molly/natural/nref11"
 #base2 = "/Users/dalek/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
-#base = "/Volumes/sonic/halo_008508/nref11n/nref11f"
+base = "/Volumes/sonic/halo_008508/nref11n/nref11f"
 #base = "/Users/lcorlies/data/Molly/nref11n_nref10f_refine200kpc_z4to2"
 #base = "/Users/lcorlies/data/Molly/natural/nref11"
 fn = base+"/RD0016/RD0016"
@@ -929,18 +929,18 @@ def holoviews_SB_profiles(box_width):
     return
 
 def holoviews_radial_profiles(weight_by=None):
-    dens = np.log10(rb['H_nuclei_density'])
-    temp = np.log10(rb['Temperature'])
-    Zgas = np.log10(rb['metallicity'])
-    cell_mass = rb['cell_mass'].in_units('Msun')
-    cell_volume = rb['cell_volume'].in_units('kpc**3')
-    x = rb['x']
-    y = rb['y']
-    z = rb['z']
-    vz = rb['z-velocity'].in_units('km/s')
+dens = np.log10(rb['H_nuclei_density'])
+temp = np.log10(rb['Temperature'])
+Zgas = np.log10(rb['metallicity'])
+cell_mass = rb['cell_mass'].in_units('Msun')
+cell_volume = rb['cell_volume'].in_units('kpc**3')
+x = rb['x']
+y = rb['y']
+z = rb['z']
+vz = rb['z-velocity'].in_units('km/s')
 
-    halo_center = ds.arr(rb_center,'code_length')
-    dist = np.sqrt((halo_center[0]-rb['x'])**2.+(halo_center[1]-rb['y'])**2.+(halo_center[2]-rb['z'])**2.).in_units('kpc')
+halo_center = ds.arr(rb_center,'code_length')
+dist = np.sqrt((halo_center[0]-rb['x'])**2.+(halo_center[1]-rb['y'])**2.+(halo_center[2]-rb['z'])**2.).in_units('kpc')
 
     df = pd.DataFrame({'temp':temp, 'dens':dens, 'Zgas':Zgas,'cell_volume':cell_volume,
                         'x':x,'y':y,'z':z,'dist':dist,'cell_mass':cell_mass,'vz':vz})
@@ -958,15 +958,17 @@ def holoviews_radial_profiles(weight_by=None):
         fileout= 'basic_profile_'+args[-3]+'_'+args[-1]
 
     if weight_by == 'cell_mass':
-        temp_shade = aggregate(hv.Scatter(df,['dist','temp']),y_range=(2,8.4),aggregator=dshade.sum('cell_mass'))
-        temp_shade = temp_shade.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cm.Reds))
-        dens_shade = aggregate(hv.Scatter(df,['dist','dens']),y_range=(-7,2.5),aggregator=dshade.sum('cell_mass'))
-        dens_shade = dens_shade.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cm.Blues))
-        metal_shade = aggregate(hv.Scatter(df,['dist','Zgas']),y_range=(-7,2.5),aggregator=dshade.sum('cell_mass'))
-        metal_shade = metal_shade.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cm.BuGn))
+temp_shade = aggregate(hv.Scatter(df,['dist','temp']),y_range=(2,8.4),aggregator=dshade.sum('cell_mass'))
+temp_shade = temp_shade.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cm.Reds))
+dens_shade = aggregate(hv.Scatter(df,['dist','dens']),y_range=(-7,2.5),aggregator=dshade.sum('cell_mass'))
+dens_shade = dens_shade.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cm.Blues))
+metal_shade = aggregate(hv.Scatter(df,['dist','Zgas']),y_range=(-7,2.5),aggregator=dshade.sum('cell_mass'))
+metal_shade = metal_shade.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cm.BuGn))
+vz_shade    = aggregate(hv.Scatter(df,['dist','vz']),y_range=(-500.,500.),aggregator=dshade.sum('cell_mass'))#,dynamic=False)
+vz_shade    = vz_shade.opts(plot=dict(colorbar=True,aspect='square',logz=True),style=dict(cmap=cm.Purples))
 
-        dist_plots = (temp_shade + dens_shade + metal_shade)
-        fileout = 'basic_profile_cell_mass_'+args[-3]+'_'+args[-1]
+dist_plots = (temp_shade + dens_shade + metal_shade + vz_shade)
+fileout = 'basic_profile_cell_mass_'+args[-3]+'_'+args[-1]
 
     if weight_by == 'cell_volume':
         temp_shade = aggregate(hv.Scatter(df,['dist','temp']),y_range=(2,8.4),aggregator=dshade.sum('cell_volume'))
@@ -979,8 +981,8 @@ def holoviews_radial_profiles(weight_by=None):
         dist_plots = (temp_shade + dens_shade + metal_shade)
         fileout = 'basic_profile_cell_vol_'+args[-3]+'_'+args[-1]
 
-    renderer = Store.renderers['matplotlib'].instance(fig='pdf', holomap='gif')
-    renderer.save(dist_plots, fileout)
+renderer = Store.renderers['matplotlib'].instance(fig='pdf', holomap='gif')
+renderer.save(dist_plots, fileout)
     return
 
 def holoviews_general_plot(xfield,yfield,ranges,fout,cmap,weight_by=None):
@@ -1478,6 +1480,7 @@ def plot_velocity_emission_slices():
 
 
 lines = ['OVI']
+holoviews_radial_profiles(weight_by='cell_mass')
 #make_weighted_phase_diagrams('z','_nref11n_nref10f_refine200kpc_z4to2_','RD0016','forcedres',ds.current_redshift)
 #make_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
 #make_ionfrac_weighted_phase_diagrams('z','_nref11_','RD0016','forcedres',ds.current_redshift)
